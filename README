@@ -30,6 +30,9 @@
 //      current notables:
 //        49Y4458: (SATA Controller card) lists as "SYS CARD EX," which is shared with management cards on POWER blades
 //        46C7171: MR10ie lists as "ADDIN CARD," shared with CKVM cards
+//  bugs
+//    all machines with sidecar processor blades (this includes PS702 blades and scaled HX5 blades, potentially others)
+//     currently list their child PCI devices and memory banks improperly
 //  eventlog
 //    time-shift event timestamps
 //    proper css for the controls for the table
