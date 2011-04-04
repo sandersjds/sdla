@@ -1,0 +1,40 @@
+// SERVICE DATA LOG ANNIHILATOR
+// PARSES and SHORTENS in LESS TIME!
+
+// ***** ***** ***** ***** ***** ***** ***** 
+// ***** ***** ***** ***** ***** ***** ***** 
+// created and maintained by JOSH SANDERS of
+//   IBM System x & BladeCenter Support in Atlanta, Georgia, USA
+// <a href="mailto:jds@us.ibm.com">jds@us.ibm.com</a>
+// ***** ***** ***** ***** ***** ***** ***** 
+// ***** ***** ***** ***** ***** ***** ***** 
+
+
+// the humble beginnings and change history of the service data log annihilator:
+// friday, april 9, 2010. because all big projects start on fridays.
+// original idea courtesy of JOE SHIPMAN.
+// version 1 published to the 7x daylighters april 19, 2010
+// version 2 published april 29, 2010, added support for caching files and other excitement
+// version 3 published june 29, 2010, added file browser, vdbg/sol parsing, mike sparks' requests, and dozens of fixes
+// version 4 published oct 29, 2010 (officially): new server, dozens of fixes, and the power tab (which is incomplete)
+
+// KNOWN GOTCHAS (no current intention to fix)
+//  machine support
+//    telco chassis support - data structures vary widely between firmware versions and machine types
+
+// TODO
+//  machine support
+//    7872 HX5 blade: additional firmware information (FPGA) as well as scale data parsing
+//    8028/8014 issues:
+//      these blades list all sorts of things as things they are not
+//      current notables:
+//        49Y4458: (SATA Controller card) lists as "SYS CARD EX," which is shared with management cards on POWER blades
+//        46C7171: MR10ie lists as "ADDIN CARD," shared with CKVM cards
+//  eventlog
+//    time-shift event timestamps
+//    proper css for the controls for the table
+//  basics
+//    possibly collapse all the arrays into one big one to make globals easier?
+//    isolate procedural code out of index.php (this will be a big one)
+//    better seperate syntax and semantics (also a big one)
+//    get into w3-compliant format (lol)

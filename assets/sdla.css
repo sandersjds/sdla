@@ -1,0 +1,551 @@
+/* RESET: http://meyerweb.com/eric/thoughts/2007/05/01/reset-reloaded/ */
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-weight:inherit;font-style:inherit;font-size:100%;font-family:inherit;vertical-align:baseline}:focus{outline:0}body{line-height:1;color:black;background:white}ol,ul{list-style:none}table{border-collapse:separate;border-spacing:0}caption,th,td{text-align:left;font-weight:normal}blockquote:before,blockquote:after,q:before,q:after{content:""}blockquote,q{quotes:""""}
+
+body {
+	line-height:1.3em;
+	font-size:small;
+	font-family:
+		Consolas,
+		"Bitstream Vera Sans Mono",
+		"Lucida Console",
+		"Courier New",
+		monospace;
+}
+
+#page_header {
+	margin:0.5em 1em 0 1em;;
+	height:50px;
+}
+
+#title {
+	float:left;
+}
+
+#lifespan {
+	float:right;
+	background-color:transparent;
+	font-size:smaller;
+}
+
+#skipped {
+	margin:3em;
+	margin-top:0;
+	background:#dedede;
+}
+
+.outputbox,
+.inputbox {
+	position:relative;
+	background:#eee;
+	border:1px solid #999;
+	clear:both;
+	zoom:1; /* because IE6 is just THAT FREAKING AWESOME: http://www.satzansatz.de/cssd/rpfloat.html */
+	/* white-space:pre; WOW DOES THIS NOT WORK LIKE I EXPECTED */
+}
+
+.outputbox {
+	margin:0 0 1em 0;
+	padding: 0.5em 0.5em 1em 1em;
+}
+
+.inputbox {
+	margin:1em 1.5em 1em 1.5em;
+	padding: 0.5em 0.5em 1em 1em;
+}
+
+.outputbox h2,
+.inputbox h2 {
+	font-size:xx-large;
+	font-weight:bold;
+	text-align:left;
+	line-height:2em;
+}
+
+.outputbox h3,
+.inputbox h3 {
+	font-weight:normal;
+	font-size:smaller;
+	font-style:oblique;
+	margin-top:0;
+	padding-top:-0;
+	margin-left:1em;
+	float:right;
+}
+
+.outputbox pre, .outputbox p, .outputbox a,
+.inputbox pre, .inputbox p, .inputbox a {
+	margin-left:1em;
+}
+
+.outputbox div.buttons,
+.inputbox div.buttons {
+	float:right;
+	padding:1em;
+	text-align:right;
+	width:100px;
+	overflow:visible;
+}
+
+.outputbox textarea,
+.inputbox textarea {
+	height:400px;
+	width:100%;
+	margin-bottom:2em;
+}
+
+.extendeddata {
+	display:none;
+}
+
+.summaryline {
+	display:block;
+}
+
+.summaryextra {
+	display:block;
+	margin-left:0.8em;
+	padding-left:0.2em;
+	background:#dedede;
+	border-left:4px solid #ccc;
+}
+
+.summaryextra table {
+	width:100%;
+	border-bottom:1px solid #ccc;
+	margin-bottom:0.3em;
+}
+
+.summaryextra table td {
+	padding:0.2em 0.5em 0.2em 0.5em;
+	border-left:1px solid #ccc;
+	border-right:1px solid #ccc;
+}
+
+.summaryextraspace {
+	line-height:0.3em;
+}
+
+.summarybreak {
+	display:block;
+	padding-bottom:0.3em;
+}
+
+/* BUTTONS */
+/* http://particletree.com/features/rediscovering-the-button-element/ */
+
+.buttons a, .buttons button{
+    display:block;
+    float:left;
+    margin:0 7px 0 0;
+    background-color:#f5f5f5;
+    border:1px solid #dedede;
+    border-top:1px solid #eee;
+    border-left:1px solid #eee;
+
+    font-family:"Lucida Grande", Tahoma, Arial, Verdana, sans-serif;
+    font-size:100%;
+    line-height:130%;
+    text-decoration:none;
+    font-weight:bold;
+    color:#565656;
+    cursor:pointer;
+    padding:5px 10px 6px 7px; /* Links */
+}
+.buttons button{
+    width:auto;
+    overflow:visible;
+    padding:4px 10px 3px 7px; /* IE6 */
+}
+.buttons button[type]{
+    padding:5px 10px 5px 7px; /* Firefox */
+    line-height:17px; /* Safari */
+}
+*:first-child+html button[type]{
+    padding:4px 10px 3px 7px; /* IE7 */
+}
+.buttons button img, .buttons a img{
+    margin:0 3px -3px 0 !important;
+    padding:0;
+    border:none;
+    width:16px;
+    height:16px;
+}
+
+/* STANDARD */
+
+button:hover, .buttons a:hover{
+    background-color:#dff4ff;
+    border:1px solid #c2e1ef;
+    color:#336699;
+}
+.buttons a:active{
+    background-color:#6299c5;
+    border:1px solid #6299c5;
+    color:#fff;
+}
+
+/* POSITIVE */
+
+button.positive, .buttons a.positive{
+    color:#529214;
+}
+.buttons a.positive:hover, button.positive:hover{
+    background-color:#E6EFC2;
+    border:1px solid #C6D880;
+    color:#529214;
+}
+.buttons a.positive:active{
+    background-color:#529214;
+    border:1px solid #529214;
+    color:#fff;
+}
+
+/* NEGATIVE */
+
+.buttons a.negative, button.negative{
+    color:#d12f19;
+}
+.buttons a.negative:hover, button.negative:hover{
+    background:#fbe3e4;
+    border:1px solid #fbc2c4;
+    color:#d12f19;
+}
+.buttons a.negative:active{
+    background-color:#d12f19;
+    border:1px solid #d12f19;
+    color:#fff;
+}
+
+
+
+/* TABS
+http://www.sohtanaka.com/web-design/simple-tabs-w-css-jquery/ */
+
+ul.tabs {
+	margin: 0;
+	padding: 0;
+	float: left;
+	list-style: none;
+	height: 32px;
+	border-bottom: 1px solid #999;
+	border-left: 1px solid #999;
+	width: 100%;
+}
+ul.tabs li {
+	float: left;
+	margin: 0;
+	padding: 0;
+	height: 31px;
+	line-height: 31px;
+	border: 1px solid #999;
+	border-left: none;
+	margin-bottom: -1px;
+	overflow: hidden;
+	position: relative;
+	background: #eee;
+}
+ul.tabs li a {
+	text-decoration: none;
+	color: #000;
+	display: block;
+	padding: 0 20px;
+	border: 1px solid #fff;
+	outline: none;
+}
+ul.tabs li a:hover {
+	background: #ccc;
+}
+html ul.tabs li.active, html ul.tabs li.active a:hover  {
+	background: #fff;
+	border-bottom: 1px solid #fff;
+}
+
+.tab_container {
+	border: 1px solid #999;
+	border-top: none;
+	/*overflow: hidden;*/
+	clear: both;
+	float: left; width: 100%;
+	background: #fff;
+	margin-bottom:2em;
+}
+.tab_content {
+	padding: 20px;
+	padding-bottom:0;
+}
+
+.container {
+	margin:0.5em 1em 0.5em 1em;
+	/*padding: 0.5em 0.5em 1em 1em;*/
+}
+
+.collapsor, .filelist {
+	line-height:18px;
+	padding-left:20px;
+	text-decoration:none;
+}
+
+a.filelist {
+	color:#600;	
+}
+
+.collapsor {
+	display: block;
+	color:#600;	
+}
+
+.collapsor:hover, a.filelist:hover {
+	text-decoration:underline;
+	color:#900;
+}
+
+.collapsee {
+	display: none;
+	margin-left:1em;
+}
+
+.collapsee pre {
+	margin-top:3px;
+	margin-bottom:3px;
+	padding:0.5em;
+	background:#dedede;
+	border-left:4px solid #ccc;
+}
+.depth0 { display: block; }
+
+.mapfolder { background: transparent url('folder.png') center left no-repeat; }
+.mapfile { background: transparent url('page_white_text.png') center left no-repeat; }
+.mappagegear { background: transparent url('bullet_green.png') center left no-repeat; }
+.mappageonly { background: transparent url('page_green.png') center left no-repeat; }
+
+.outputbox .filters {
+	float:right;
+}
+
+#ajaxbrowser {
+	float:left;
+}
+
+#ajaxinclude {
+	float:right;
+}
+
+.plaintexttable { width:100%;}
+.plaintexttable td.plaintext { width:100%;}
+.plaintext pre, .linenums pre { margin-left:0;}
+.plaintext div { padding-left:5px;}
+a.fileline { display:block;}
+.linenums a, .linenums a:hover, .linenums a:visited {
+	text-decoration:none;
+	padding:0 5px 0 5px;
+	color:#888;
+}
+.linenums {
+	text-align:right;
+	border-right:1px solid #bbb;
+}
+
+.evenline {
+	background-color:#f3f3f3;
+}
+
+.node {
+	background:#eee;
+	padding:0.5em;
+	margin-left:3em;
+	/* white-space:pre; WOW DOES THIS NOT WORK LIKE I EXPECTED */
+	border-left:1px solid #666;
+	/*border-right:1px solid #666;*/
+	display:none;
+}
+
+.nodehead {
+	color:#eee;
+	padding:0 2em;
+	font-size:small;
+	cursor:pointer;
+}
+
+.coloredbar {
+	background:#666;
+	color:#eee;
+	/*border:1px solid #666;*/
+}
+
+.novpd {
+	background:#900;
+	color:#fff;
+}
+
+.coloredfoot {
+	background:#eee;
+	/*border:1px solid #666;*/
+}
+
+.nodefoot {
+	color:#666;
+	border-top:0;
+	padding:0 2em;
+	font-size:small;
+}
+
+#eventlogtable td,#eventlogtable th,
+#vdbgtable td,#vdbgtable th,
+#solstatustable td,#solstatustable th,
+#powerstatstable td,#powerstatstable th,
+#extrapowerstatstable td,#extrapowerstatstable th,
+#pwrdetails td,#pwrdetails th,
+#scaledetailstable td, #scaledetailstable th {
+	padding:2px;
+	border:1px solid #ddd; 
+}
+
+
+#debug { display:none; }
+
+#footer {
+	margin:0 auto;
+	padding:1em 4em 0em 4em;
+	height:40px;
+	clear:both;
+}
+
+#footer div {
+	font-size:small;
+	color:transparent;
+	border-top:1px solid #999;
+	background:transparent url('footer.gif') no-repeat right top;
+}
+
+#footer div:hover {
+	color:#999;
+	background:transparent;
+}
+
+#footer div span {
+	line-height:20px;
+	padding-left:20px;
+	background: transparent url('time.png') center left no-repeat;
+}
+
+#sortalert {
+	display:none;
+	position:absolute;
+	top:0;
+	right:0;
+	background-color: #666;
+	color:#fff;
+	text-align:center;
+	font-weight:bold;
+	font-size:large;
+	padding:10px;
+}
+
+a.infoctr, a.infoctr:visited {
+	display:block;
+	text-align:center;
+	color:#600;
+	text-decoration:none;
+}
+
+a.infoctr:hover {
+	color:#f00;
+	background-color:#e6e6e6;
+}
+
+.aixerror {
+	font-weight:bold;
+}
+
+
+/* tablesorter */
+table.tablesorter {
+	font-family:arial;
+	background-color: #cdcdcd;
+	margin:10px 0pt 15px;
+	font-size: 8pt;
+	width: 100%;
+	text-align: left;
+}
+table.tablesorter thead tr th, table.tablesorter tfoot tr th {
+	background-color: #e6e6e6;
+	border: 1px solid #999;
+	font-size: 8pt;
+	padding: 4px;
+}
+
+table.tablesorter tbody td {
+	color: #3d3d3d;
+	padding: 4px;
+	background-color: #fff;
+	vertical-align: top;
+}
+table.tablesorter tbody tr.odd td {
+	background-color:#eee;
+}
+
+table.tablesorter td {
+	border-right:none;
+}
+
+table.tablesorter tbody td.error { background-color: #fcc; }
+table.tablesorter tbody tr.odd td.error { background-color: #eeafaf; }
+
+table.tablesorter tbody td.warn { background-color: #ffc; }
+table.tablesorter tbody tr.odd td.warn { background-color: #ffffaf; }
+
+.evt_key,
+.evt_sev,
+.evt_source,
+.evt_date,
+.evt_err,
+.vdbg_index,
+.vdbg_iserr,
+.vdbg_source,
+.vdbg_date,
+.sol_slot,
+.sol_state,
+.sol_cap,
+.sol_ena,
+.sol_pwr,
+.sol_addr,
+.pwrval{
+	white-space: nowrap;
+}
+
+.evt_text,
+.vdbg_text,
+.sol_text,
+.pwrtxt { width:100%; }
+
+
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * DataTables sorting
+ */
+
+.sorting_asc {
+	background: url(asc.gif) no-repeat center right;
+	cursor: pointer;
+	background-color: #e6e6e6;
+}
+
+.sorting_desc {
+	background: url(desc.gif) no-repeat center right;
+	cursor: pointer;
+	background-color: #e6e6e6;
+}
+
+.sorting {
+	background: url(bg.gif) no-repeat center right;
+	cursor: pointer;
+	background-color: #FFE6E6;
+}
+
+.sorting_asc_disabled {
+	background: url('../images/sort_asc_disabled.png') no-repeat center right;
+}
+
+.sorting_desc_disabled {
+	background: url('../images/sort_desc_disabled.png') no-repeat center right;
+}
