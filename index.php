@@ -149,6 +149,7 @@ if (($_GET['ajax']) && ($_GET['file'])) {
 				mkdir($upload_dir.$upload_rand);
 				exec(escapeshellcmd('tar -C '.$upload_dir.$upload_rand.$decompression_options.$uploadfile));
 				exec(escapeshellcmd('chmod -R 777 '.$upload_dir.$upload_rand.'/*'));
+				deltree($upload_dir.$upload_rand.'.'.$extension);
 				header('Location:./?'.$upload_rand);
 			}
 		}
