@@ -72,8 +72,8 @@ body {
 	float:right;
 }
 
-.outputbox pre, .outputbox p, .outputbox a,
-.inputbox pre, .inputbox p, .inputbox a {
+.outputbox pre, .outputbox p,
+.inputbox pre, .inputbox p {
 	margin-left:1em;
 }
 

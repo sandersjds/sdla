@@ -7,8 +7,9 @@
 
 if (!isset($upload_dir)) $upload_dir=str_replace('index.php','',$_SERVER["SCRIPT_FILENAME"]).'upl/'; // TRAILING SLASH OMG
 if (!isset($file_expiry)) $file_expiry=strtotime('-1 day', time());
+if (!isset($shortmode)) $shortmode=FALSE; // disables "long loading" portions of the logs - pretty much everything except the summaries
 if (!isset($debug)) $debug=FALSE; // TRUE makes the program show debug info
-if (!isset($php_debug)) $phpdebug=FALSE; // TRUE enables the php engine debugger; be prepared for a lot of bullshit when you turn this one on
+if (!isset($php_debug)) $php_debug=FALSE; // TRUE enables the php engine debugger; be prepared for a lot of bullshit when you turn this one on
 
 
 // ***** ***** ***** ***** ***** ***** ***** 
@@ -34,6 +35,24 @@ $aLicenses=array();
 
 $aNoVPD=array();
 $timers=array();
+
+
+// ***** ***** ***** ***** ***** ***** ***** 
+// ***** ***** databases
+// ***** ***** ***** ***** ***** ***** ***** 
+
+
+	// the function that normalizes the data for field 'search'
+	function dbnorm($e) { return strtoupper(str_replace(array(' ','-'),'',$e)); }
+	
+	require_once('../../m/adodb/adodb.inc.php');
+	define('DIMMDB','../../m/dimm/dimmdb.sqlite.db');
+	
+	$dimmdb=&ADONewConnection('sqlite');
+	$dimmdb->Connect(DIMMDB);
+	$dimmdb->debug = FALSE;
+	
+
 
 // ***** ***** ***** ***** ***** ***** ***** 
 // ***** ***** functions
@@ -271,6 +290,7 @@ function fWalkTree($a,$b,$e=0) {
 						case "STG_MOD":		fDrawSTModule($node,$aSection);		break; // changed in 54G
 						case "INTERPOSER":	fDrawMSIM($node,$aSection);			break; // MSIMs in H-chassis
 						case "17":			fDrawMSIM($node,$aSection);			break; // this one is just completely absurd
+						case "MUX":			fSkipSection();						break; // component of BC-HT chassis; unknown if this is useful
 						case "MEDIA MOD":	fDrawMediaTray($node,$aSection);	break;
 						case "MEDIA_MOD":	fDrawMediaTray($node,$aSection);	break; // possible for 55J
 						default:			fDrawDefault($node,$aSection);		// if we don't recognize it, send it to the bucket!
@@ -279,7 +299,7 @@ function fWalkTree($a,$b,$e=0) {
 					fDrawDefault($node,$aSection); // no component type, probably no VPD; dump to unhandled sections
 				}
 			} else {
-				echo '<!-- '.print_r($node,TRUE).' -->';
+				//echo '<!-- '.print_r($node,TRUE).' -->';
 			}
 		} else { // is meta!
 			switch ($node['id']) {
@@ -311,6 +331,7 @@ function fWalkTree($a,$b,$e=0) {
 
 function fSkipSection() { return FALSE; }
 
+/*
 function fDrawDefaultOrig($n,$s) {
 	global $aUnhandled;
 
@@ -318,25 +339,29 @@ function fDrawDefaultOrig($n,$s) {
 	
 	$aUnhandled[]='<a name="'.$n['path'].'"></a>'."\n".'<div class="nodehead"><span class="coloredbar'.$errclass.'">'.$n['path']." - section starts on line: ".$n['linestart'].'</span></div>';
 	$aUnhandled[]='<div id="'.$n['path'].'" class="node"><pre>';
+
 	$aUnhandled[]=implode("",$s);
 	$aUnhandled[]="</pre></div>\n".'<div class="nodefoot"><span class="coloredfoot">';
-	if ($n[parent]) $aUnhandled[]='child of '.$n[parent].' - ';
+	if ($n['parent']) $aUnhandled[]='child of '.$n['parent'].' - ';
 	$aUnhandled[]='section ends on line: '.$n['lineend'].'</span></div>';
 	$aUnhandled[]="\n\n";
 }
+*/
 
 function fDrawDefault($n,$s) {
 	global $aUnhandled,$aNoVPD;
 
 	if (preg_grep('#Property failed to read status#', $s)) {
-		// vpd read errors
-		$aNoVPD[]='<a name="'.$n['path'].'"></a>'."\n".'<div class="nodehead"><span class="coloredbar novpd">'.$n['path']." - section starts on line: ".$n['linestart'].'</span></div>';
-		$aNoVPD[]='<div id="'.$n['path'].'" class="node"><pre>';
-		$aNoVPD[]=implode("",$s);
-		$aNoVPD[]="</pre></div>\n".'<div class="nodefoot"><span class="coloredfoot">';
-		if ($n[parent]) $aNoVPD[]='child of '.$n[parent].' - ';
-		$aNoVPD[]='section ends on line: '.$n['lineend'].'</span></div>';
-		$aNoVPD[]="\n\n";
+		if ($n['id']!='PANEL[1]' && $n['id']!='STORAGE[1]' && $n['id']!='STORAGE[2]') {
+			// vpd read errors
+			$aNoVPD[]='<a name="'.$n['path'].'"></a>'."\n".'<div class="nodehead"><span class="coloredbar novpd">'.$n['path']." - section starts on line: ".$n['linestart'].'</span></div>';
+			$aNoVPD[]='<div id="'.$n['path'].'" class="node"><pre>';
+			$aNoVPD[]=implode("",$s);
+			$aNoVPD[]="</pre></div>\n".'<div class="nodefoot"><span class="coloredfoot">';
+			if ($n[parent]) $aNoVPD[]='child of '.$n[parent].' - ';
+			$aNoVPD[]='section ends on line: '.$n['lineend'].'</span></div>';
+			$aNoVPD[]="\n\n";
+		}
 	} else {
 		// unrecognized section
 		$aUnhandled[]='<a name="'.$n['path'].'"></a>'."\n".'<div class="nodehead"><span class="coloredbar">'.$n['path']." - section starts on line: ".$n['linestart'].'</span></div>';
@@ -384,14 +409,16 @@ function fDrawChassis($n,$s) {
 function fDrawMgmt($n,$s) {
 	global $aMgmt,$aLogfileIndex;
 	
-	$aMgmt[$n['slot']]['id']=$n['id'];
-	$aMgmt[$n['slot']]['role']=fSplitByColon(preg_grep('#Component Role#', $s));
-	$aMgmt[$n['slot']]['fw']=fSplitByColon(preg_grep('#Build ID#', $s));
-	$aMgmt[$n['slot']]['fru']=fSplitByColon(preg_grep('#FRU Number#', $s));
-		//superfluous: $aLogfileIndex[$n['mapkey']]['fru']=$aMgmt[$n['slot']]['fru'];
-	$aMgmt[$n['slot']]['conf']=fSplitByColon(preg_grep('#Configuration behaviors#', $s));
-	$aMgmt[$n['slot']]['mac']=fSplitByColon(preg_grep('#Link Ifc Addr in use#', $s));
-		$aLogfileIndex[$n['mapkey']]['parsed']=$aMgmt[$n['slot']];
+	// telco interposer stuff
+	($n['depth']==3)?$slotname=$n['parentslot']:$slotname=$n['slot'];
+	
+	$aMgmt[$slotname]['id']=$n['id'];
+	$aMgmt[$slotname]['role']=fSplitByColon(preg_grep('#Component Role#', $s));
+	$aMgmt[$slotname]['fw']=fSplitByColon(preg_grep('#Build ID#', $s));
+	$aMgmt[$slotname]['fru']=fSplitByColon(preg_grep('#FRU Number#', $s));
+	$aMgmt[$slotname]['conf']=fSplitByColon(preg_grep('#Configuration behaviors#', $s));
+	$aMgmt[$slotname]['mac']=fSplitByColon(preg_grep('#Link Ifc Addr in use#', $s));
+		$aLogfileIndex[$n['mapkey']]['parsed']=$aMgmt[$slotname];
 }
 
 function fDrawBlade($n,$s) {
@@ -440,6 +467,10 @@ function fDrawBlade($n,$s) {
 				$aBlades[$n['slot']]['ismpb']=fSplitByColon($fw1[$key]);
 				$aBlades[$n['slot']]['ismpv']=fSplitByColon($fw2[$key]);
 				break;
+			case 'FPGA':
+				$aBlades[$n['slot']]['fpgab']=fSplitByColon($fw1[$key]);
+				$aBlades[$n['slot']]['fpgav']=fSplitByColon($fw2[$key]);
+				break;
 			}
 		}
 	}
@@ -458,11 +489,9 @@ function fDrawCPU($n,$s) {
 	
 	// cpu identifier
 	// thx to bejean for this
+	// not sure how reliable this is
 	
-	// if this is re-enabled, the processor count in the summary will be incorrect (doubled up!)
-	// that should be fixed if this actually gets any play (which it probably won't ast this is hugely unreliable)
 	
-	/*
 	$a=fSplitByColon(preg_grep('#Identifier#', $s));
 	if ($a) {
 		$b=str_split($a,2);
@@ -470,20 +499,39 @@ function fDrawCPU($n,$s) {
 		$extclock=(float)fSplitByColon(preg_grep('#External Clock#', $s));
 		if ($extclock>1000) $extclock=$extclock/1000;
 		$search_string='http://www.google.com/search?hl=en&lr=&q=site%3Aintel.com+'.$c.'+'.$extclock.'+'.$speed.'&btnI=I%27m+Feeling+Lucky';
-		$aBlades[$n['parentslot']]['cpu']['cpuid'.$n['slot']]=$search_string;
+		$aBlades[$n['parentslot']]['cpuid'][$n['slot']]=$search_string;
 	}
-	*/
+	
 	
 	$aLogfileIndex[$n['mapkey']]['parsed']=$aBlades[$n['parentslot']]['cpu'][$n['slot']];
 }
 
 function fDrawMemory($n,$s) {
-	global $aBlades,$aLogfileIndex;
-	
+	global $aBlades,$aLogfileIndex,$dimmdb;
+
+	/*
 	$aBlades[$n['parentslot']]['memory'][$n['slot']]=fSplitByColon(preg_grep('#Size#', $s));
 	// what does this need to be?
 	// //superfluous: $aLogfileIndex[$n['mapkey']]['fru']==fSplitByColon(preg_grep('#Size#', $s));
 		$aLogfileIndex[$n['mapkey']]['parsed']=$aBlades[$n['parentslot']]['memory'][$n['slot']];
+	*/
+	
+
+	// if the memory is in a MAX5 or expansion, the parentslot is always "1"
+	if ($n['depth']==4) {
+		// BEM/MAX5
+		$aBlades[$n['slotpath'][1]]['expansion'][$n['parentslot']]['memory'][$n['slot']]=fSplitByColon(preg_grep('#Size#', $s));
+		$aBlades[$n['slotpath'][1]]['expansion'][$n['parentslot']]['memorypn'][$n['slot']]=fSplitByColon(preg_grep('#Part Number:#', $s));
+		$aBlades[$n['slotpath'][1]]['expansion'][$n['parentslot']]['memoryfru'][$n['slot']]=$dimmdb->GetOne('SELECT ibmfru FROM dimmdb WHERE search=', array(dbnorm(fSplitByColon(preg_grep('#Part Number:#', $s)))));
+		//$aLogfileIndex[$n['mapkey']]['parsed']=$aBlades[$n['slotpath'][1]]['expansion'][$n['parentslot']]['memoryfru'][$n['slot']];
+		$aLogfileIndex[$n['mapkey']]['parsed']['fru']=$dimmdb->GetOne('SELECT ibmfru FROM dimmdb WHERE search=', array(dbnorm(fSplitByColon(preg_grep('#Part Number:#', $s)))));
+	} else {
+		$aBlades[$n['parentslot']]['memory'][$n['slot']]=fSplitByColon(preg_grep('#Size#', $s));
+		$aBlades[$n['parentslot']]['memorypn'][$n['slot']]=fSplitByColon(preg_grep('#Part Number:#', $s));
+		$aBlades[$n['parentslot']]['memoryfru'][$n['slot']]=$dimmdb->GetOne('SELECT ibmfru FROM dimmdb WHERE search=', array(dbnorm(fSplitByColon(preg_grep('#Part Number:#', $s)))));
+		//$aLogfileIndex[$n['mapkey']]['parsed']=$aBlades[$n['parentslot']]['memoryfru'][$n['slot']];
+		$aLogfileIndex[$n['mapkey']]['parsed']['fru']=$dimmdb->GetOne('SELECT ibmfru FROM dimmdb WHERE search=', array(dbnorm(fSplitByColon(preg_grep('#Part Number:#', $s)))));
+	}
 }
 
 function fDrawScaleCard($n,$s) {
@@ -492,9 +540,14 @@ function fDrawScaleCard($n,$s) {
 	$aBlades[$n['parentslot']]['interconnect']['desc']=fSplitByColon(preg_grep('#Description#', $s));
 	$aBlades[$n['parentslot']]['interconnect']['fru']=fSplitByColon(preg_grep('#Part Number#', $s));
 	
-	// info that may be useful for parsing:
-	// HX5 Speed Burst Card, FRU 59Y5890 (SINGLE-WIDE)
-	// HX5 2-Node Scalability Card, FRU 46M6976 (DOUBLE-WIDE)
+	switch($aBlades[$n['parentslot']]['interconnect']['fru']) {
+		// HX5 Speed Burst Card, FRU 59Y5890 (SINGLE-WIDE)
+		// HX5 2-Node Scalability Card, FRU 46M6976 (DOUBLE-WIDE)
+		// MAX5 Node Scalability Card, FRU 59Y5878 (???)
+		case '59Y5890': $aBlades[$n['parentslot']]['interconnect']['name']='HX5 Speed Burst Card'; break;
+		case '46M6976': $aBlades[$n['parentslot']]['interconnect']['name']='HX5 2-Node Scalability Card'; break;
+		case '59Y5878': $aBlades[$n['parentslot']]['interconnect']['name']='MAX5 Node Scalability Card'; break;
+	}
 	
 		$aLogfileIndex[$n['mapkey']]['parsed']=$aBlades[$n['parentslot']]['interconnect'];
 }
@@ -557,8 +610,14 @@ function fDrawExpansion($n,$s) {
 	$aBlades[$n['parentslot']]['expansion'][$n['slot']]['name']=fSplitByColon(preg_grep('#Product Name#', $s));
 	$aBlades[$n['parentslot']]['expansion'][$n['slot']]['desc']=fSplitByColon(preg_grep('#Description #', $s));
 	$aBlades[$n['parentslot']]['expansion'][$n['slot']]['fru']=fSplitByColon(preg_grep('#FRU Number#', $s));
-		//superfluous: $aLogfileIndex[$n['mapkey']]['fru']=$aBlades[$n['parentslot']]['expansion'][$n['slot']]['fru'];
-		$aLogfileIndex[$n['mapkey']]['parsed']=$aBlades[$n['parentslot']]['expansion'][$n['slot']];
+	
+	// if the name is blank, let's name it ourselves
+	if (!$aBlades[$n['parentslot']]['expansion'][$n['slot']]['name']) {
+		switch($aBlades[$n['parentslot']]['expansion'][$n['slot']]['fru']) {
+			case '46M6974': $aBlades[$n['parentslot']]['expansion'][$n['slot']]['name']='IBM MAX5 expansion blade'; break;
+		}
+	}
+	$aLogfileIndex[$n['mapkey']]['parsed']=$aBlades[$n['parentslot']]['expansion'][$n['slot']];
 }
 
 function fDrawPower($n,$s) {
@@ -759,7 +818,7 @@ function fDrawEvt($n,$s) {
 }
 
 function fDrawScaleData($n,$s) {
-	global $aScale;
+	global $aScale,$aBlades;
 
 	foreach ($s as $key => $value) {
 		$tempdata[]=$value;
@@ -786,21 +845,12 @@ function fDrawScaleData($n,$s) {
 		$complex['primaryblade']=fSplitByColon(preg_grep('#Primary Complex Slot:#',$complex['data']));
 		$complex['numslots']=fSplitByColon(preg_grep('#Number of Slots:#',$complex['data']));
 		$complex['numnodes']=fSplitByColon(preg_grep('#Number of Nodes:#',$complex['data']));
+		$complex['lastupdate']=date('m/d/Y H:i:s',substr(fSplitByColon(preg_grep('#Last Update:#',$complex['data'])),0,-4));
 		
-		/*
-		$complex['nodeslist']=preg_grep('#Blade Slot:#',$complex['data']);
-		foreach ($complex['nodeslist'] as $eachnode) { $complex['nodes'][]=fSplitByColon($eachnode); }
-		unset($complex['nodeslist']);
-		*/
-		
-		$complex['lastupdate']=date('r',substr(fSplitByColon(preg_grep('#Last Update:#',$complex['data'])),0,-4));
-		
-		
+		$complex['partitions']=fSplitByColon(preg_grep('#Number of Partitions Configured:#',$complex['data']));
 		
 		$nodestartlines=preg_grep('#Node Information#',$complex['data']);
 		$nodestartlines=array_keys($nodestartlines);
-		
-		//$complex['nodeinfo']=$nodestartlines;
 		
 		foreach ($nodestartlines as $nodekey => $nodevalue) {
 			$complex['nodedetails'][$nodekey]['linestart']=$nodevalue;
@@ -816,6 +866,9 @@ function fDrawScaleData($n,$s) {
 			$complex['nodedetails'][$nodekey]['serial']=fSplitByColon(preg_grep('#Serial Number:#',$complex['nodedetails'][$nodekey]['data']));
 			$complex['nodedetails'][$nodekey]['pwrstate']=fSplitByColon(preg_grep('#Power State:#',$complex['nodedetails'][$nodekey]['data']));
 			$complex['nodedetails'][$nodekey]['flags']=fSplitByColon(preg_grep('#Partition Flags:#',$complex['nodedetails'][$nodekey]['data']));
+			
+			// assign the blades array with complex identification info
+			$aBlades[$complex['nodedetails'][$nodekey]['bladeslot']]['complex']=(count($aScale['parsed']['complex'])+1);
 			
 			unset($complex['nodedetails'][$nodekey]['linestart']);
 			unset($complex['nodedetails'][$nodekey]['lineend']);
@@ -998,18 +1051,33 @@ function fSummarize($e=0) {
 	// blades
 	if (count($aBlades)) {
 	foreach ($aBlades as $key => $blade) {
-		($blade['width'])?$width=$blade['width'].' wide ':'';
-		$temp='<div class="summaryline">Blade '.sprintf("%02s",$key).': '.$blade['mtm'].'/'.$blade['sn'].' FW: '.$blade['biosv'].' ('.$blade['biosb'].') SP: '.$blade['ismpv'].' ('.$blade['ismpb'].') DG: '.$blade['diagv'].' ('.$blade['diagb'].') '.$width.'('.$blade['name'].')</div>';
+		($blade['width'])?$width=$blade['width'].' wide ':$width='';
+		($blade['complex'])?$scaletemp=' scale '.$blade['complex']:$scaletemp='';
+		if ($e) {
+			($blade['diagb'] && $blade['diagv'])?$diagtemp=' DG: '.$blade['diagv'].' ('.$blade['diagv'].') ':$diagtemp='';
+			($blade['fpgab'] && $blade['fpgav'])?$fpgatemp=' FPGA: '.$blade['fpgav'].' ('.$blade['fpgab'].') ':$fpgatemp='';
+			$temp='<div class="summaryline">Blade '.sprintf("%02s",$key).': '.$blade['mtm'].'/'.$blade['sn'].' FW: '.$blade['biosv'].' ('.$blade['biosb'].') SP: '.$blade['ismpv'].' ('.$blade['ismpb'].') '.$diagtemp.$fpgatemp.$width.'('.$blade['name'].') '.$scaletemp.'</div>';
+		} else {
+			($blade['diagb'] && $blade['diagv'])?$diagtemp=' DG: '.$blade['diagv'].', ':$diagtemp='';
+			($blade['fpgab'] && $blade['fpgav'])?$fpgatemp=' FPGA: '.$blade['fpgav'].', ':$fpgatemp='';
+			$temp='<div class="summaryline">Blade '.sprintf("%02s",$key).': '.$blade['mtm'].'/'.$blade['sn'].' FW: '.$blade['biosv'].', SP: '.$blade['ismpv'].', '.$diagtemp.$fpgatemp.$width.'('.$blade['name'].') '.$scaletemp.'</div>';
+		}
 		
 		// extra stuff
 		if ($e) {
 			unset($extra);
-			if (count($blade[expansion])) { foreach ($blade[expansion] as $slot => $bem) { $extra[]="<div class=\"summaryextra\">\t Expansion ".$slot.' '.$bem[fru].': '.$bem[name].' ('.$bem[desc].')</div>'; }}
-			if (count($blade[memory]) || count($blade[cpu])) $extra[]="<div class=\"summaryextra\">\t".count($blade[memory]).' DIMMs installed; '.count($blade[cpu]).' processors installed</div>';
-			if (count($blade[hshba])) { foreach ($blade[hshba] as $slot => $adapter) { $extra[]="<div class=\"summaryextra\">\t HSHBA ".$slot.' '.$adapter[fru].': '.$adapter[name].' ('.$adapter[desc].')</div>'; }}
-			if (count($blade[hba])) { foreach ($blade[hba] as $slot => $adapter) { $extra[]="<div class=\"summaryextra\">\t HBA ".$slot.' '.$adapter[fru].': '.$adapter[name].' ('.$adapter[desc].')</div>'; }}
-			if (count($blade[ckvm])) { foreach ($blade[ckvm] as $slot => $adapter) { $extra[]="<div class=\"summaryextra\">\t CKVM ".$slot.' '.$adapter[fru].': '.$adapter[name].' ('.$adapter[desc].')</div>'; }}
-			if (count($blade[mgmt])) { foreach ($blade[mgmt] as $slot => $adapter) { $extra[]="<div class=\"summaryextra\">\t MGMT ".$slot.' '.$adapter[fru].': '.$adapter[name].' ('.$adapter[desc].')</div>'; }}
+			if (count($blade['memory']) || count($blade['cpu'])) $extra[]="<div class=\"summaryextra\">\t".count($blade['memory']).' DIMMs installed; '.count($blade['cpu']).' processors installed</div>';
+			if (count($blade['expansion'])) {
+				foreach ($blade['expansion'] as $slot => $bem) {
+					if (count($bem['memory'])) $expansiondimms=' '.count($bem['memory']).' DIMMs installed';
+					$extra[]="<div class=\"summaryextra\">\t Expansion ".$slot.' '.$bem['fru'].': '.$bem['name'].' ('.$bem['desc'].')'.$expansiondimms.'</div>';
+				}
+			}
+			if (count($blade['interconnect'])) { $extra[]="<div class=\"summaryextra\">\t Interconnect ".$blade['interconnect']['fru'].': '.$blade['interconnect']['name'].' ('.$blade['interconnect']['desc'].')</div>'; }
+			if (count($blade['hshba'])) { foreach ($blade['hshba'] as $slot => $adapter) { $extra[]="<div class=\"summaryextra\">\t HSHBA ".$slot.' '.$adapter['fru'].': '.$adapter['name'].' ('.$adapter['desc'].')</div>'; }}
+			if (count($blade['hba'])) { foreach ($blade['hba'] as $slot => $adapter) { $extra[]="<div class=\"summaryextra\">\t HBA ".$slot.' '.$adapter['fru'].': '.$adapter['name'].' ('.$adapter['desc'].')</div>'; }}
+			if (count($blade['ckvm'])) { foreach ($blade['ckvm'] as $slot => $adapter) { $extra[]="<div class=\"summaryextra\">\t CKVM ".$slot.' '.$adapter['fru'].': '.$adapter['name'].' ('.$adapter['desc'].')</div>'; }}
+			if (count($blade['mgmt'])) { foreach ($blade['mgmt'] as $slot => $adapter) { $extra[]="<div class=\"summaryextra\">\t MGMT ".$slot.' '.$adapter['fru'].': '.$adapter['name'].' ('.$adapter['desc'].')</div>'; }}
 		}
 		
 		if (count($extra)) $output[]=$temp.implode('',$extra).'<div class="summaryextraspace">&nbsp;</div>'; else $output[]=$temp;
@@ -1147,10 +1215,10 @@ function fShowScaleNotice() {
 function fBuildScaleChart() {
 	global $aScale;
 	
-	$output[]='<table id="scaledetailstable" class="tablesorter"><thead><tr><th>complex</th><th>state</th><th>slots</th><th>nodes</th><th>primary</th><th>last update</th><th>slot</th><th>serial</th><th>state</th><th>flags</th></thead>';
+	$output[]='<table id="scaledetailstable" class="tablesorter"><thead><tr><th>complex</th><th>state</th><th>slots</th><th>nodes</th><th>partitions</th><th>primary</th><th>last update</th><th>slot</th><th>serial</th><th>state</th><th>flags</th></thead>';
 	
 	foreach ($aScale['parsed']['complex'] as $key => $val) {
-		$output[]='<tr><td>Complex '.($key+1).'</td><td>'.$val['state'].'</td><td>'.$val['numslots'].'</td><td>'.$val['numnodes'].'</td><td>'.$val['primaryblade'].'</td><td>'.$val['lastupdate'].'</td>';
+		$output[]='<tr><td>Complex '.($key+1).'</td><td>'.$val['state'].'</td><td>'.$val['numslots'].'</td><td>'.$val['numnodes'].'</td><td>'.$val['partitions'].'</td><td>'.$val['primaryblade'].'</td><td>'.$val['lastupdate'].'</td>';
 	
 		if ($val['numnodes']>0) {
 			foreach ($val['nodedetails'] as $nodekey => $nodeval) {
@@ -1292,7 +1360,7 @@ function fDrawMap($a,$start="") {
 				($n['parsed']['fru'])?$nodefru=' &nbsp; <em>'.$n['parsed']['fru'].'</em>':$nodefru='';
 				$next=fReportChildrenOf($n['id'],$a);
 				if (count($next)) {
-					echo '<a class="collapsor mapfolder" href="#data_'.$k.'">'.$n['id'].$nodefru.'</a>'."\n";
+					echo '<a class="maplink collapsor mapfolder" href="#data_'.$k.'">'.$n['id'].$nodefru.'</a>'."\n";
 					echo '<div class="collapsee depth'.$n['depth'].'" id="collapse_'.$k.'">'."\n";
 					
 					$class=' mappagegear';
@@ -1302,7 +1370,7 @@ function fDrawMap($a,$start="") {
 					$label=$n['id'].$nodefru;//.' <em>(data only)</em>';
 				}
 				
-				echo '<a class="collapsor'.$class.'" href="#data_'.$k.'">'.$label.'</a>'."\n";
+				echo '<a class="maplink collapsor'.$class.'" href="#data_'.$k.'">'.$label.'</a>'."\n";
 				echo '<div class="collapsee nodedata" id="data_'.$k.'"><pre>';
 				
 				$pointer=$n['linestart']; while ($pointer<=$n['lineend']) { $aSection[]=$aLogfile[$pointer++]; }
@@ -1323,7 +1391,7 @@ function fEvtlog($a) {
 	$return[]='<div id="sortalert">please wait</div>';
 	$return[]='<div id="sort_sev"></div>';
 	$return[]='<div id="sort_source"></div>';
-	$return[]='<table id="eventlogtable" class="tablesorter"><thead><tr><th>#</th><th>Sev</th><th>Source</th><th>Date/Time</th><!--<th>S</th>--><th>EventID</th><th>Text</th></tr></thead>';
+	$return[]='<table id="eventlogtable" class="tablesorter"><thead><tr><th>#</th><th>Sev</th><th>Source</th><th>Date/Time</th><th>EventID</th><th>Text</th></tr></thead>';
 	foreach ($a as $line) {
 			//indices:
 			//	0 Index
@@ -1422,7 +1490,7 @@ function fEvtFilterBoxes($a) {
 		<option value="WARN" class="sev1">Warning</option>
 		<option value="INFO" class="sev2">Info</option>
 	</select>-->
-	<select class="filterbox arc90_multiselect" name="filter_source[]" id="filter_source" multiple="multiple" size="3"><!---->';
+	<select class="filterbox arc90_multiselect" name="filter_source[]" id="filter_source" multiple="multiple" size="3">';
 	// testing
 	$return.='		<option value="ERR" class="sev0">Error</option>
 		<option value="WARN" class="sev1">Warning</option>
@@ -1482,7 +1550,6 @@ function fBuildHeader() { ?>
 	if ($expiry) {
 ?>
 			<ul>
-				<!--<li>page load timers?</li>-->
 				<li><?php echo $expiry; ?> hrs remaining before upload purged</li>
 				<li>file type: <?php echo $upload_type; ?></li>
 			</ul><?php } ?>
@@ -1573,7 +1640,7 @@ function fBuildAcquire($errortext=FALSE) {
 
 <!-- actual content begins -->
 
-<?php echo '<!-- '.print_r($px.$fi,TRUE).' -->'; ?>
+<?php //echo '<!-- '.print_r($px.$fi,TRUE).' -->'; ?>
 
 <img src="parser/sdla/assets/<?php $lgl[]='logo-en.gif'; $lgl[]='logo-es.gif'; echo $lgl[mt_rand(0,1)]; unset($lgl); ?>" alt="Service Data Log Annihilator" />
 <blockquote>

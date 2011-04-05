@@ -15,14 +15,9 @@
 // ***** ***** ***** ***** ***** ***** ***** 
 // ***** ***** ***** ***** ***** ***** ***** 
 
-
-// for the full "README" please see the ABOUT section near the bottom of this file.
-
-
 // INSTALL
 //  step 1: copy files to host
 //  step 2: create upload directory, chmod 6777 dir; default is './upl/'
-
 
 
 // ***** ***** ***** ***** ***** ***** ***** 
@@ -165,11 +160,17 @@ if (($_GET['ajax']) && ($_GET['file'])) {
 			<div id="uploads" class="inputbox">
 			<h2>Upload List</h2><table>';
 	$dirlist=listdir($upload_dir);
+	
+	//foreach ($dirlist as $key => $val) { $query=explode('.',$val); $query=$query[0]; $newlist[$key]=$query; }
+	//echo '<!-- '.print_r(array_flip(array_flip($newlist)),TRUE).' -->';
+	
 	asort($dirlist);
-	foreach ($dirlist as $entry) {
+	
+	foreach ($dirlist as $keydata => $entry) {
 		//$fileage=filemtime($upload_dir.$entry);
 		$query=explode('.',$entry); $query=$query[0];
-		echo '<tr><td><a href="./?'.$query.'">'.$entry.'</a> </td><td>'.round((((filemtime($upload_dir.$entry)-$file_expiry)/60)/60),2)." hrs remaining</td></td>";
+		//if ($dirlist[$keydata-1]
+		echo '<tr><td><!-- '.$keydata.' --><a href="./?'.$query.'">'.$entry.'</a> </td><td>'.round((((filemtime($upload_dir.$entry)-$file_expiry)/60)/60),2)." hrs remaining</td></td>";
 		///echo $entry.": ".date('r',$fileage).' ('.$fileage.') '.$cleanup."\n";
 	}
 	echo '</table></div>';
@@ -244,27 +245,6 @@ if (($_GET['ajax']) && ($_GET['file'])) {
 	if ($aLogfile) {
 		fBuildHeader();
 		
-		?>
-		<?php //echo "\n\n<!-- ".print_r($aScale,TRUE)." -->\n\n"; ?>
-		<div class="container">
-			<ul class="tabs">
-				<li><a href="#summariestab">Summary</a></li>
-				<li><a href="#extendedsummariestab">Details</a></li>
-				<?php if (is_dir($upload_dir.$_SERVER['QUERY_STRING']) && is_file($upload_dir.$_SERVER['QUERY_STRING'].'/primary_ffdc/developer.txt')) { ?><li><a href="#powertab">Power</a></li><?php } ?>
-				<li><a href="#maptab">Map</a></li>
-				<li><a id="evtlogtab" href="#eventlogtab">Eventlog</a></li>
-				<?php
-					if (is_dir($upload_dir.$_SERVER['QUERY_STRING']) && is_file($upload_dir.$_SERVER['QUERY_STRING'].'/primary_ffdc/vdbg.txt')) { ?><li><a href="#vdbgtab">vdbg</a></li><?php }
-					if (is_dir($upload_dir.$_SERVER['QUERY_STRING'])) { ?><li><a href="#filelisttab">File Browser</a></li><?php }
-					/*if (is_dir($upload_dir.$_SERVER['QUERY_STRING']) && is_file($upload_dir.$_SERVER['QUERY_STRING'].'/primary_ffdc/developer.txt')) { ?><li><a href="#soltab">SOL</a></li><?php }*/ ?>
-				<li><a href="#abouttab">About</a></li>
-				<?php if ($debug) { ?><li><a href="#debugtab" style="color:#f00;">debug</a></li><?php } ?>
-			</ul>
-
-			<div class="tab_container">
-				<div id="summariestab" class="tab_content">
-		<?php
-		
 		fTimer('pass1');
 		$aLogfileIndex=fBuildTree($aLogfile);
 		fTimer('pass1',1);
@@ -280,9 +260,37 @@ if (($_GET['ajax']) && ($_GET['file'])) {
 			fBuildDevMap($aDevfile);
 			fTimer('SOL',1);
 			
-			echo '<!-- '.substr($aChassis[1]['mtm'],0,4).' -->';
+			if ((substr($aChassis[1]['mtm'],0,4)==8720) || (substr($aChassis[1]['mtm'],0,4)==8730) || (substr($aChassis[1]['mtm'],0,4)==8740) || (substr($aChassis[1]['mtm'],0,4)==8750)) {
+				$telco_chassis=TRUE;
+				//$shortmode=TRUE;
+			}
 			
-			if ((substr($aChassis[1]['mtm'],0,4)==8720) || (substr($aChassis[1]['mtm'],0,4)==8730) || (substr($aChassis[1]['mtm'],0,4)==8740) || (substr($aChassis[1]['mtm'],0,4)==8750)){
+		
+		?>
+		<div class="container">
+			<ul class="tabs">
+				<li><a href="#summariestab">Summary</a></li>
+				<li><a href="#extendedsummariestab">Details</a></li>
+				<?php
+				if (!$shortmode) { 
+				if (is_dir($upload_dir.$_SERVER['QUERY_STRING']) && is_file($upload_dir.$_SERVER['QUERY_STRING'].'/primary_ffdc/developer.txt')) { ?>
+				<li><a href="#powertab">Power</a></li><?php } ?>
+				<li><a href="#maptab">Map</a></li>
+				<li><a id="evtlogtab" href="#eventlogtab">Eventlog</a></li>
+				<?php
+					if (is_dir($upload_dir.$_SERVER['QUERY_STRING']) && is_file($upload_dir.$_SERVER['QUERY_STRING'].'/primary_ffdc/vdbg.txt')) { ?><li><a href="#vdbgtab">vdbg</a></li><?php }
+					if (is_dir($upload_dir.$_SERVER['QUERY_STRING'])) { ?><li><a href="#filelisttab">File Browser</a></li><?php }
+					/*if (is_dir($upload_dir.$_SERVER['QUERY_STRING']) && is_file($upload_dir.$_SERVER['QUERY_STRING'].'/primary_ffdc/developer.txt')) { ?><li><a href="#soltab">SOL</a></li><?php }*/ 
+					} //shortmode ?>
+				<li><a href="#abouttab">About</a></li>
+				<?php if ($debug) { ?><li><a href="#debugtab" style="color:#f00;">debug</a></li><?php } ?>
+			</ul>
+
+			<div class="tab_container">
+				<div id="summariestab" class="tab_content">
+		<?php
+		
+			if ($telco_chassis){
 				echo '<a name="bctwarning"></a>
 						<div id="bctwarning" class="outputbox">
 						<h2>Telco Chassis Warning</h2>This log is for a <strong>BLADECENTER TELCO CHASSIS</strong> (MT '.substr($aChassis[1]['mtm'],0,4).'). The Annihilator will attempt to parse this log, but be aware that due to some of the data topology structures and widely varying types of output from different firmware versions, the output may look strange, and may produce VERY large logs. If it takes <strong>longer than 10 seconds</strong> or so to complete loading of the page, <strong>press ESCAPE to cancel loading</strong> or your browser may hang.<br /><br />Your mileage may vary; you have been warned.</div>';
@@ -314,15 +322,12 @@ if (($_GET['ajax']) && ($_GET['file'])) {
 			// summary section
 			echo '<a name="summary"></a>
 					<div id="summary" class="outputbox">
-					<!--<h3><a href="#" id="extender">toggle extended data</a></h3>-->
 					<h2>Summary</h2><p>';
 			fTimer('summary');
 			
 			echo '<div class="normaldata">';
 			echo fSummarize();
-			echo '</div><!--<div class="extendeddata">';
-			//echo fSummarize(1);
-			echo '</div>-->';
+			echo '</div>';
 			
 			fTimer('summary',1);
 			echo '</p></div>';
@@ -360,7 +365,6 @@ if (($_GET['ajax']) && ($_GET['file'])) {
 			// detailed summary tab
 			echo '<a name="extsummary"></a>
 					<div id="extsummary" class="outputbox">
-					<!--<h3><a href="#" id="extender">toggle extended data</a></h3>-->
 					<h2>Detailed Summary</h2><p>';
 			fTimer('extsummary');
 			
@@ -384,7 +388,6 @@ if (($_GET['ajax']) && ($_GET['file'])) {
 			if ($aLicenses['details']) {
 				echo '<a name="licenses"></a>
 						<div id="licenses" class="outputbox">
-						<!--<h3><a href="#" id="extender">toggle extended data</a></h3>-->
 						<h2>Licensed Features</h2><pre>';
 				
 				echo implode('<br />',$aLicenses['details']);
@@ -396,7 +399,6 @@ if (($_GET['ajax']) && ($_GET['file'])) {
 				fTimer('scale');
 				echo '<a name="scale"></a>
 						<div id="scale" class="outputbox">
-						<!--<h3><a href="#" id="extender">toggle extended data</a></h3>-->
 						<h2>Scalable Partition Summary</h2><pre>';
 				
 				echo fBuildScaleChart();
@@ -411,6 +413,7 @@ if (($_GET['ajax']) && ($_GET['file'])) {
 	
 			?>
 				</div>
+			<?php if (!$shortmode) { ?>
 				<div id="powertab" class="tab_content">
 			<?php
 				echo '<a name="fuelgauge"></a>
@@ -501,7 +504,7 @@ if (($_GET['ajax']) && ($_GET['file'])) {
     <div id="chart_div2"></div>
 
 <?php
-				
+				/*
 					echo '<table id="powerstatstable" class="tablesorter">';
 					foreach ($aPowerMeta['powerstats'] as $key => $line) {
 						if ($key<1) echo '<thead>';
@@ -530,7 +533,8 @@ if (($_GET['ajax']) && ($_GET['file'])) {
 						if ($key<1) echo '</thead>';
 					}
 					echo '</table></div>';
-					
+					*/
+					echo '</div>';
 				}
 			?>
 				</div>
@@ -598,55 +602,13 @@ if (($_GET['ajax']) && ($_GET['file'])) {
 				</div>
 			
 			<?php } ?>
+			<?php } // shortmode ?>
 			
 				<div id="abouttab" class="tab_content">
 					<a name="aboutsection"></a>
 					<div id="aboutsection" class="outputbox">
 						<h2>About the Annihilator</h2>
-						<pre>
-
-
-// SERVICE DATA LOG ANNIHILATOR
-// PARSES and SHORTENS in LESS TIME!
-
-// ***** ***** ***** ***** ***** ***** ***** 
-// ***** ***** ***** ***** ***** ***** ***** 
-// created and maintained by JOSH SANDERS of
-//   IBM System x & BladeCenter Support in Atlanta, Georgia, USA
-// <a href="mailto:jds@us.ibm.com">jds@us.ibm.com</a>
-// ***** ***** ***** ***** ***** ***** ***** 
-// ***** ***** ***** ***** ***** ***** ***** 
-
-
-// the humble beginnings and change history of the service data log annihilator:
-// friday, april 9, 2010. because all big projects start on fridays.
-// original idea courtesy of JOE SHIPMAN.
-// version 1 published to the 7x daylighters april 19, 2010
-// version 2 published april 29, 2010, added support for caching files and other excitement
-// version 3 published june 29, 2010, added file browser, vdbg/sol parsing, mike sparks' requests, and dozens of fixes
-// version 4 published oct 29, 2010 (officially): new server, dozens of fixes, and the power tab (which is incomplete)
-
-// KNOWN GOTCHAS (no current intention to fix)
-//  machine support
-//    telco chassis support - data structures vary widely between firmware versions and machine types
-
-// TODO
-//  machine support
-//    7872 HX5 blade: additional firmware information (FPGA) as well as scale data parsing
-//    8028/8014 issues:
-//      these blades list all sorts of things as things they are not
-//      current notables:
-//        49Y4458: (SATA Controller card) lists as "SYS CARD EX," which is shared with management cards on POWER blades
-//        46C7171: MR10ie lists as "ADDIN CARD," shared with CKVM cards
-//  eventlog
-//    time-shift event timestamps
-//    proper css for the controls for the table
-//  basics
-//    possibly collapse all the arrays into one big one to make globals easier?
-//    isolate procedural code out of index.php (this will be a big one)
-//    better seperate syntax and semantics (also a big one)
-//    get into w3-compliant format (lol)
-						</pre>
+						<pre><?php include('./README');?></pre>
 					</div>
 				</div>
 				
