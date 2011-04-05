@@ -127,6 +127,7 @@ if (($_GET['ajax']) && ($_GET['file'])) {
 					$temp=explode('"',$val);
 					$filename=$temp[1];
 					$extension=explode('.',$filename);
+					if (count($extension)>2) $extension2=strtolower($extension[count($extension)-2]);
 					$extension=strtolower($extension[count($extension)-1]);
 				}
 			}
@@ -134,7 +135,8 @@ if (($_GET['ajax']) && ($_GET['file'])) {
 
 		if ($content && $filename && $extension) {
 			//$extension='tgz';
-			if ($extension=='tgz' || $extension=='tar') {
+			if ($extension=='tgz' || $extension=='tar' || ($extension=='gz' && $extension2=='tar')) {
+				if ($extension=='gz' && $extension2=='tar') $extension='tar.gz';
 				($extension=='tar')?$decompression_options=' -xf ':$decompression_options=' -zxf ';
 				$upload_rand=base_convert(mt_rand(10,99).time(),10,36);
 				$uploadfile=$upload_dir.$upload_rand.'.'.$extension;
@@ -144,7 +146,6 @@ if (($_GET['ajax']) && ($_GET['file'])) {
 				mkdir($upload_dir.$upload_rand);
 				exec(escapeshellcmd('tar -C '.$upload_dir.$upload_rand.$decompression_options.$uploadfile));
 				exec(escapeshellcmd('chmod -R 777 '.$upload_dir.$upload_rand.'/*'));
-				deltree($upload_dir.$upload_rand.'.'.$extension);
 				header('Location:./?'.$upload_rand);
 			}
 		}
