@@ -1,5 +1,5 @@
 <?php
- 
+
 // ***** ***** ***** ***** ***** ***** ***** 
 // ***** ***** config defaults
 // ***** ***** ***** ***** ***** ***** ***** 
@@ -11,6 +11,10 @@ if (!isset($shortmode)) $shortmode=FALSE; // disables "long loading" portions of
 if (!isset($debug)) $debug=FALSE; // TRUE makes the program show debug info
 if (!isset($php_debug)) $php_debug=FALSE; // TRUE enables the php engine debugger; be prepared for a lot of bullshit when you turn this one on
 
+
+if (!isset($dimmdbenable)) $dimmdbenable=FALSE; // true enables the external DIMM DB lookup by manufacturer P/N
+if (!isset($dimmdbinclude)) $dimmdbinclude='../../m/adodb/adodb.inc.php'; // path to the DIMM database include
+if (!isset($dimmdbpath)) $dimmdbpath='../../m/dimm/dimmdb.sqlite.db'; // path to the DIMM database itself
 
 // ***** ***** ***** ***** ***** ***** ***** 
 // ***** ***** variables
@@ -36,6 +40,25 @@ $aSDC=array();
 
 $aNoVPD=array();
 $timers=array();
+
+
+// ***** ***** ***** ***** ***** ***** ***** 
+// ***** ***** databases
+// ***** ***** ***** ***** ***** ***** ***** 
+
+	if ($dimmdbenable) {
+		// the function that normalizes the data for field 'search'
+		function dbnorm($e) { return strtoupper(str_replace(array(' ','-'),'',$e)); }
+		
+		require_once($dimmdbinclude);
+		define('DIMMDB',$dimmdbpath);
+		
+		$dimmdb=&ADONewConnection('sqlite');
+		$dimmdb->Connect(DIMMDB);
+		$dimmdb->debug = FALSE;
+	}
+	
+
 
 // ***** ***** ***** ***** ***** ***** ***** 
 // ***** ***** functions
@@ -490,7 +513,7 @@ function fDrawCPU($n,$s) {
 }
 
 function fDrawMemory($n,$s) {
-	global $aSDC,$aLogfileIndex;
+	global $aSDC,$aLogfileIndex,$dimmdb,$dimmdbenable;
 
 	/*
 	$aSDC['blade'][$n['parentslot']]['memory'][$n['slot']]=fSplitByColon(preg_grep('#Size#', $s));
@@ -498,15 +521,27 @@ function fDrawMemory($n,$s) {
 	// //superfluous: $aLogfileIndex[$n['mapkey']]['fru']==fSplitByColon(preg_grep('#Size#', $s));
 		$aLogfileIndex[$n['mapkey']]['parsed']=$aSDC['blade'][$n['parentslot']]['memory'][$n['slot']];
 	*/
-	
+
 	// if the memory is in a MAX5 or expansion, the parentslot is always "1"
 	if ($n['depth']==4) {
 		// BEM/MAX5
 		$aSDC['blade'][$n['slotpath'][1]]['expansion'][$n['parentslot']]['memory'][$n['slot']]=fSplitByColon(preg_grep('#Size#', $s));
-		$aLogfileIndex[$n['mapkey']]['parsed']=$aSDC['blade'][$n['slotpath'][1]]['expansion'][$n['parentslot']]['memory'][$n['slot']];
+		$aSDC['blade'][$n['slotpath'][1]]['expansion'][$n['parentslot']]['memorypn'][$n['slot']]=fSplitByColon(preg_grep('#Part Number:#', $s));
+		if ($dimmdbenable) {
+			$aSDC['blade'][$n['slotpath'][1]]['expansion'][$n['parentslot']]['memoryfru'][$n['slot']]=$dimmdb->GetOne('SELECT ibmfru FROM dimmdb WHERE search=', array(dbnorm(fSplitByColon(preg_grep('#Part Number:#', $s)))));
+			$aLogfileIndex[$n['mapkey']]['parsed']['fru']=$dimmdb->GetOne('SELECT ibmfru FROM dimmdb WHERE search=', array(dbnorm(fSplitByColon(preg_grep('#Part Number:#', $s)))));
+		} else {
+			$aLogfileIndex[$n['mapkey']]['parsed']['fru']=str_replace('(decimal) ','',$aSDC['blade'][$n['slotpath'][1]]['expansion'][$n['parentslot']]['memory'][$n['slot']]);
+		}
 	} else {
 		$aSDC['blade'][$n['parentslot']]['memory'][$n['slot']]=fSplitByColon(preg_grep('#Size#', $s));
-		$aLogfileIndex[$n['mapkey']]['parsed']=$aSDC['blade'][$n['parentslot']]['memory'][$n['slot']];
+		$aSDC['blade'][$n['parentslot']]['memorypn'][$n['slot']]=fSplitByColon(preg_grep('#Part Number:#', $s));
+		if ($dimmdbenable) {
+			$aSDC['blade'][$n['parentslot']]['memoryfru'][$n['slot']]=$dimmdb->GetOne('SELECT ibmfru FROM dimmdb WHERE search=', array(dbnorm(fSplitByColon(preg_grep('#Part Number:#', $s)))));
+			$aLogfileIndex[$n['mapkey']]['parsed']['fru']=$dimmdb->GetOne('SELECT ibmfru FROM dimmdb WHERE search=', array(dbnorm(fSplitByColon(preg_grep('#Part Number:#', $s)))));
+		} else {
+			$aLogfileIndex[$n['mapkey']]['parsed']['fru']=str_replace('(decimal) ','',$aSDC['blade'][$n['parentslot']]['memory'][$n['slot']]);
+		}
 	}
 }
 
