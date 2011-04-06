@@ -12,6 +12,10 @@ if (!isset($debug)) $debug=FALSE; // TRUE makes the program show debug info
 if (!isset($php_debug)) $php_debug=FALSE; // TRUE enables the php engine debugger; be prepared for a lot of bullshit when you turn this one on
 
 
+if (!isset($dimmdbenable)) $dimmdbenable=FALSE; // true enables the external DIMM DB lookup by manufacturer P/N
+if (!isset($dimmdbinclude)) $dimmdbinclude='../../m/adodb/adodb.inc.php'; // path to the DIMM database include
+if (!isset($dimmdbpath)) $dimmdbpath='../../m/dimm/dimmdb.sqlite.db'; // path to the DIMM database itself
+
 // ***** ***** ***** ***** ***** ***** ***** 
 // ***** ***** variables
 // ***** ***** ***** ***** ***** ***** ***** 
@@ -41,16 +45,17 @@ $timers=array();
 // ***** ***** databases
 // ***** ***** ***** ***** ***** ***** ***** 
 
-
-	// the function that normalizes the data for field 'search'
-	function dbnorm($e) { return strtoupper(str_replace(array(' ','-'),'',$e)); }
-	
-	require_once('../../m/adodb/adodb.inc.php');
-	define('DIMMDB','../../m/dimm/dimmdb.sqlite.db');
-	
-	$dimmdb=&ADONewConnection('sqlite');
-	$dimmdb->Connect(DIMMDB);
-	$dimmdb->debug = FALSE;
+	if ($dimmdbenable) {
+		// the function that normalizes the data for field 'search'
+		function dbnorm($e) { return strtoupper(str_replace(array(' ','-'),'',$e)); }
+		
+		require_once($dimmdbinclude);
+		define('DIMMDB',$dimmdbpath);
+		
+		$dimmdb=&ADONewConnection('sqlite');
+		$dimmdb->Connect(DIMMDB);
+		$dimmdb->debug = FALSE;
+	}
 	
 
 
@@ -507,7 +512,7 @@ function fDrawCPU($n,$s) {
 }
 
 function fDrawMemory($n,$s) {
-	global $aBlades,$aLogfileIndex,$dimmdb;
+	global $aBlades,$aLogfileIndex,$dimmdb,$dimmdbenable;
 
 	/*
 	$aBlades[$n['parentslot']]['memory'][$n['slot']]=fSplitByColon(preg_grep('#Size#', $s));
@@ -522,15 +527,21 @@ function fDrawMemory($n,$s) {
 		// BEM/MAX5
 		$aBlades[$n['slotpath'][1]]['expansion'][$n['parentslot']]['memory'][$n['slot']]=fSplitByColon(preg_grep('#Size#', $s));
 		$aBlades[$n['slotpath'][1]]['expansion'][$n['parentslot']]['memorypn'][$n['slot']]=fSplitByColon(preg_grep('#Part Number:#', $s));
-		$aBlades[$n['slotpath'][1]]['expansion'][$n['parentslot']]['memoryfru'][$n['slot']]=$dimmdb->GetOne('SELECT ibmfru FROM dimmdb WHERE search=', array(dbnorm(fSplitByColon(preg_grep('#Part Number:#', $s)))));
-		//$aLogfileIndex[$n['mapkey']]['parsed']=$aBlades[$n['slotpath'][1]]['expansion'][$n['parentslot']]['memoryfru'][$n['slot']];
-		$aLogfileIndex[$n['mapkey']]['parsed']['fru']=$dimmdb->GetOne('SELECT ibmfru FROM dimmdb WHERE search=', array(dbnorm(fSplitByColon(preg_grep('#Part Number:#', $s)))));
+		if ($dimmdbenable) {
+			$aBlades[$n['slotpath'][1]]['expansion'][$n['parentslot']]['memoryfru'][$n['slot']]=$dimmdb->GetOne('SELECT ibmfru FROM dimmdb WHERE search=', array(dbnorm(fSplitByColon(preg_grep('#Part Number:#', $s)))));
+			$aLogfileIndex[$n['mapkey']]['parsed']['fru']=$dimmdb->GetOne('SELECT ibmfru FROM dimmdb WHERE search=', array(dbnorm(fSplitByColon(preg_grep('#Part Number:#', $s)))));
+		} else {
+			$aLogfileIndex[$n['mapkey']]['parsed']['fru']=str_replace('(decimal) ','',$aBlades[$n['slotpath'][1]]['expansion'][$n['parentslot']]['memory'][$n['slot']]);
+		}
 	} else {
 		$aBlades[$n['parentslot']]['memory'][$n['slot']]=fSplitByColon(preg_grep('#Size#', $s));
 		$aBlades[$n['parentslot']]['memorypn'][$n['slot']]=fSplitByColon(preg_grep('#Part Number:#', $s));
-		$aBlades[$n['parentslot']]['memoryfru'][$n['slot']]=$dimmdb->GetOne('SELECT ibmfru FROM dimmdb WHERE search=', array(dbnorm(fSplitByColon(preg_grep('#Part Number:#', $s)))));
-		//$aLogfileIndex[$n['mapkey']]['parsed']=$aBlades[$n['parentslot']]['memoryfru'][$n['slot']];
-		$aLogfileIndex[$n['mapkey']]['parsed']['fru']=$dimmdb->GetOne('SELECT ibmfru FROM dimmdb WHERE search=', array(dbnorm(fSplitByColon(preg_grep('#Part Number:#', $s)))));
+		if ($dimmdbenable) {
+			$aBlades[$n['parentslot']]['memoryfru'][$n['slot']]=$dimmdb->GetOne('SELECT ibmfru FROM dimmdb WHERE search=', array(dbnorm(fSplitByColon(preg_grep('#Part Number:#', $s)))));
+			$aLogfileIndex[$n['mapkey']]['parsed']['fru']=$dimmdb->GetOne('SELECT ibmfru FROM dimmdb WHERE search=', array(dbnorm(fSplitByColon(preg_grep('#Part Number:#', $s)))));
+		} else {
+			$aLogfileIndex[$n['mapkey']]['parsed']['fru']=str_replace('(decimal) ','',$aBlades[$n['parentslot']]['memory'][$n['slot']]);
+		}
 	}
 }
 
