@@ -20,22 +20,23 @@ if (!isset($dimmdbpath)) $dimmdbpath='../../m/dimm/dimmdb.sqlite.db'; // path to
 // ***** ***** variables
 // ***** ***** ***** ***** ***** ***** ***** 
 
+$aSDC=array();
 
-$aMeta=array();
-$aChassis=array();
-$aMgmt=array();
-$aBlades=array();
-$aIO=array();
-$aMSIM=array();
-$aPower=array();
-$aCooling=array();
-$aStorage=array();
-$aMedia=array();
-$aScale=array();
-$aEvt=array();
-$aUnhandled=array();
-$aPowerMeta=array();
-$aLicenses=array();
+// $aMeta=array();
+// $aChassis=array();
+// $aMgmt=array();
+// $aBlades=array();
+// $aIO=array();
+// $aMSIM=array();
+// $aPower=array();
+// $aCooling=array();
+// $aStorage=array();
+// $aMedia=array();
+// $aScale=array();
+// $aEvt=array();
+// $aUnhandled=array();
+// $aPowerMeta=array();
+// $aLicenses=array();
 
 $aNoVPD=array();
 $timers=array();
@@ -338,23 +339,23 @@ function fSkipSection() { return FALSE; }
 
 /*
 function fDrawDefaultOrig($n,$s) {
-	global $aUnhandled;
+	global $aSDC;
 
 	(preg_grep('#Property failed to read status#', $s))?$errclass=' novpd':$errclass='';
 	
-	$aUnhandled[]='<a name="'.$n['path'].'"></a>'."\n".'<div class="nodehead"><span class="coloredbar'.$errclass.'">'.$n['path']." - section starts on line: ".$n['linestart'].'</span></div>';
-	$aUnhandled[]='<div id="'.$n['path'].'" class="node"><pre>';
+	$aSDC['unhandled'][]='<a name="'.$n['path'].'"></a>'."\n".'<div class="nodehead"><span class="coloredbar'.$errclass.'">'.$n['path']." - section starts on line: ".$n['linestart'].'</span></div>';
+	$aSDC['unhandled'][]='<div id="'.$n['path'].'" class="node"><pre>';
 
-	$aUnhandled[]=implode("",$s);
-	$aUnhandled[]="</pre></div>\n".'<div class="nodefoot"><span class="coloredfoot">';
-	if ($n['parent']) $aUnhandled[]='child of '.$n['parent'].' - ';
-	$aUnhandled[]='section ends on line: '.$n['lineend'].'</span></div>';
-	$aUnhandled[]="\n\n";
+	$aSDC['unhandled'][]=implode("",$s);
+	$aSDC['unhandled'][]="</pre></div>\n".'<div class="nodefoot"><span class="coloredfoot">';
+	if ($n['parent']) $aSDC['unhandled'][]='child of '.$n['parent'].' - ';
+	$aSDC['unhandled'][]='section ends on line: '.$n['lineend'].'</span></div>';
+	$aSDC['unhandled'][]="\n\n";
 }
 */
 
 function fDrawDefault($n,$s) {
-	global $aUnhandled,$aNoVPD;
+	global $aSDC,$aNoVPD;
 
 	if (preg_grep('#Property failed to read status#', $s)) {
 		if ($n['id']!='PANEL[1]' && $n['id']!='STORAGE[1]' && $n['id']!='STORAGE[2]') {
@@ -369,73 +370,73 @@ function fDrawDefault($n,$s) {
 		}
 	} else {
 		// unrecognized section
-		$aUnhandled[]='<a name="'.$n['path'].'"></a>'."\n".'<div class="nodehead"><span class="coloredbar">'.$n['path']." - section starts on line: ".$n['linestart'].'</span></div>';
-		$aUnhandled[]='<div id="'.$n['path'].'" class="node"><pre>';
-		$aUnhandled[]=implode("",$s);
-		$aUnhandled[]="</pre></div>\n".'<div class="nodefoot"><span class="coloredfoot">';
-		if ($n[parent]) $aUnhandled[]='child of '.$n[parent].' - ';
-		$aUnhandled[]='section ends on line: '.$n['lineend'].'</span></div>';
-		$aUnhandled[]="\n\n";
+		$aSDC['unhandled'][]='<a name="'.$n['path'].'"></a>'."\n".'<div class="nodehead"><span class="coloredbar">'.$n['path']." - section starts on line: ".$n['linestart'].'</span></div>';
+		$aSDC['unhandled'][]='<div id="'.$n['path'].'" class="node"><pre>';
+		$aSDC['unhandled'][]=implode("",$s);
+		$aSDC['unhandled'][]="</pre></div>\n".'<div class="nodefoot"><span class="coloredfoot">';
+		if ($n[parent]) $aSDC['unhandled'][]='child of '.$n[parent].' - ';
+		$aSDC['unhandled'][]='section ends on line: '.$n['lineend'].'</span></div>';
+		$aSDC['unhandled'][]="\n\n";
 	}
 }
 
 function fDrawHeader($n,$s) {
-	global $aMeta;
+	global $aSDC;
 	
-	$aMeta['time']=fSplitByColon(preg_grep('#Time:#', $s));
-	$aMeta['name']=fSplitByColon(preg_grep('#Name:#', $s));
-	$aMeta['ammip']=fSplitByColon(preg_grep('#IP address:#', $s));
-	$aMeta['gmt']=fSplitByColon(preg_grep('#GMT offset:#', $s));
-	$aMeta['health']=fSplitByColon(preg_grep('#System Health#', $s));
+	$aSDC['meta']['time']=fSplitByColon(preg_grep('#Time:#', $s));
+	$aSDC['meta']['name']=fSplitByColon(preg_grep('#Name:#', $s));
+	$aSDC['meta']['ammip']=fSplitByColon(preg_grep('#IP address:#', $s));
+	$aSDC['meta']['gmt']=fSplitByColon(preg_grep('#GMT offset:#', $s));
+	$aSDC['meta']['health']=fSplitByColon(preg_grep('#System Health#', $s));
 	
 	$temp=array_keys(preg_grep('#System Health#', $s));
 	$healthstart=$temp[0]+1;
 	$pointer=$healthstart; while ($pointer<=$n['lineend']) { $aHealthSection[]=$s[$pointer++]; }
-	if ($aHealthSection) $aMeta['healthdetail']=implode("",$aHealthSection);
+	if ($aHealthSection) $aSDC['meta']['healthdetail']=implode("",$aHealthSection);
 	
 	
 }
 
 function fDrawChassis($n,$s) {
-	global $aChassis,$aLogfileIndex;
+	global $aSDC,$aLogfileIndex;
 	
-	$aChassis[$n['slot']]['id']=$n['id'];
-	$aChassis[$n['slot']]['mtm']=fSplitByColon(preg_grep('#Machine Type/Model#', $s));
-	$aChassis[$n['slot']]['sn']=fSplitByColon(preg_grep('#Machine Serial Number#', $s));
-	$aChassis[$n['slot']]['type']=fSplitByColon(preg_grep('#Sub Type#', $s));
-	$aChassis[$n['slot']]['power']=fSplitByColon(preg_grep('#Power Mode#', $s));
-	$aChassis[$n['slot']]['fru']=fSplitByColon(preg_grep('#FRU Number#', $s));
-		//superfluous: $aLogfileIndex[$n['mapkey']]['fru']=$aChassis[$n['slot']]['fru'];
-	$aChassis[$n['slot']]['kvmowner']=fSplitByColon(preg_grep('#KVM Owner#', $s));
-	$aChassis[$n['slot']]['mediaowner']=fSplitByColon(preg_grep('#MT Owner#', $s));
-		$aLogfileIndex[$n['mapkey']]['parsed']=$aChassis[$n['slot']];
+	$aSDC['chassis'][$n['slot']]['id']=$n['id'];
+	$aSDC['chassis'][$n['slot']]['mtm']=fSplitByColon(preg_grep('#Machine Type/Model#', $s));
+	$aSDC['chassis'][$n['slot']]['sn']=fSplitByColon(preg_grep('#Machine Serial Number#', $s));
+	$aSDC['chassis'][$n['slot']]['type']=fSplitByColon(preg_grep('#Sub Type#', $s));
+	$aSDC['chassis'][$n['slot']]['power']=fSplitByColon(preg_grep('#Power Mode#', $s));
+	$aSDC['chassis'][$n['slot']]['fru']=fSplitByColon(preg_grep('#FRU Number#', $s));
+		//superfluous: $aLogfileIndex[$n['mapkey']]['fru']=$aSDC['chassis'][$n['slot']]['fru'];
+	$aSDC['chassis'][$n['slot']]['kvmowner']=fSplitByColon(preg_grep('#KVM Owner#', $s));
+	$aSDC['chassis'][$n['slot']]['mediaowner']=fSplitByColon(preg_grep('#MT Owner#', $s));
+		$aLogfileIndex[$n['mapkey']]['parsed']=$aSDC['chassis'][$n['slot']];
 }
 
 function fDrawMgmt($n,$s) {
-	global $aMgmt,$aLogfileIndex;
+	global $aSDC,$aLogfileIndex;
 	
 	// telco interposer stuff
 	($n['depth']==3)?$slotname=$n['parentslot']:$slotname=$n['slot'];
 	
-	$aMgmt[$slotname]['id']=$n['id'];
-	$aMgmt[$slotname]['role']=fSplitByColon(preg_grep('#Component Role#', $s));
-	$aMgmt[$slotname]['fw']=fSplitByColon(preg_grep('#Build ID#', $s));
-	$aMgmt[$slotname]['fru']=fSplitByColon(preg_grep('#FRU Number#', $s));
-	$aMgmt[$slotname]['conf']=fSplitByColon(preg_grep('#Configuration behaviors#', $s));
-	$aMgmt[$slotname]['mac']=fSplitByColon(preg_grep('#Link Ifc Addr in use#', $s));
-		$aLogfileIndex[$n['mapkey']]['parsed']=$aMgmt[$slotname];
+	$aSDC['mgmt'][$slotname]['id']=$n['id'];
+	$aSDC['mgmt'][$slotname]['role']=fSplitByColon(preg_grep('#Component Role#', $s));
+	$aSDC['mgmt'][$slotname]['fw']=fSplitByColon(preg_grep('#Build ID#', $s));
+	$aSDC['mgmt'][$slotname]['fru']=fSplitByColon(preg_grep('#FRU Number#', $s));
+	$aSDC['mgmt'][$slotname]['conf']=fSplitByColon(preg_grep('#Configuration behaviors#', $s));
+	$aSDC['mgmt'][$slotname]['mac']=fSplitByColon(preg_grep('#Link Ifc Addr in use#', $s));
+		$aLogfileIndex[$n['mapkey']]['parsed']=$aSDC['mgmt'][$slotname];
 }
 
 function fDrawBlade($n,$s) {
-	global $aBlades,$aLogfileIndex;
+	global $aSDC,$aLogfileIndex;
 	
-	$aBlades[$n['slot']]['id']=$n['id'];
-	$aBlades[$n['slot']]['name']=fSplitByColon(preg_grep('#Name #', $s));
-	$aBlades[$n['slot']]['mtm']=fSplitByColon(preg_grep('#Machine Type/Model#', $s));
-	$aBlades[$n['slot']]['sn']=fSplitByColon(preg_grep('#Machine Serial Number#', $s));
-	$aBlades[$n['slot']]['fru']=fSplitByColon(preg_grep('#FRU Number#', $s));
-		//superfluous: $aLogfileIndex[$n['mapkey']]['fru']=$aBlades[$n['slot']]['fru'];
-	$aBlades[$n['slot']]['width']=fSplitByColon(preg_grep('#Width#', $s));
+	$aSDC['blade'][$n['slot']]['id']=$n['id'];
+	$aSDC['blade'][$n['slot']]['name']=fSplitByColon(preg_grep('#Name #', $s));
+	$aSDC['blade'][$n['slot']]['mtm']=fSplitByColon(preg_grep('#Machine Type/Model#', $s));
+	$aSDC['blade'][$n['slot']]['sn']=fSplitByColon(preg_grep('#Machine Serial Number#', $s));
+	$aSDC['blade'][$n['slot']]['fru']=fSplitByColon(preg_grep('#FRU Number#', $s));
+		//superfluous: $aLogfileIndex[$n['mapkey']]['fru']=$aSDC['blade'][$n['slot']]['fru'];
+	$aSDC['blade'][$n['slot']]['width']=fSplitByColon(preg_grep('#Width#', $s));
 	
 	// get the port info
 	$ports=array_values(preg_grep('#Topology Path ID#', $s));
@@ -445,11 +446,11 @@ function fDrawBlade($n,$s) {
 	$addr=array_values(preg_grep('#Link Ifc Addr in use#', $s));
 	
 	foreach ($ports as $index => $each) {
-		$aBlades[$n['slot']]['port'][fSplitByColon($each)]['port']=fSplitByColon($ports[$index]);
-		$aBlades[$n['slot']]['port'][fSplitByColon($each)]['type']=fSplitByColon($type[$index]);
-		$aBlades[$n['slot']]['port'][fSplitByColon($each)]['speed']=fSplitByColon($speed[$index]);
-		$aBlades[$n['slot']]['port'][fSplitByColon($each)]['protocol']=fSplitByColon($protocol[$index]);
-		$aBlades[$n['slot']]['port'][fSplitByColon($each)]['addr']=fSplitByColon($addr[$index]);
+		$aSDC['blade'][$n['slot']]['port'][fSplitByColon($each)]['port']=fSplitByColon($ports[$index]);
+		$aSDC['blade'][$n['slot']]['port'][fSplitByColon($each)]['type']=fSplitByColon($type[$index]);
+		$aSDC['blade'][$n['slot']]['port'][fSplitByColon($each)]['speed']=fSplitByColon($speed[$index]);
+		$aSDC['blade'][$n['slot']]['port'][fSplitByColon($each)]['protocol']=fSplitByColon($protocol[$index]);
+		$aSDC['blade'][$n['slot']]['port'][fSplitByColon($each)]['addr']=fSplitByColon($addr[$index]);
 	}
 	
 	// getting the firmware versions
@@ -461,35 +462,35 @@ function fDrawBlade($n,$s) {
 		foreach ($fw0 as $key => $value) {
 			switch ($value) {
 			case 'FW/BIOS':
-				$aBlades[$n['slot']]['biosb']=fSplitByColon($fw1[$key]);
-				$aBlades[$n['slot']]['biosv']=fSplitByColon($fw2[$key]);
+				$aSDC['blade'][$n['slot']]['biosb']=fSplitByColon($fw1[$key]);
+				$aSDC['blade'][$n['slot']]['biosv']=fSplitByColon($fw2[$key]);
 				break;
 			case 'Diagnostics':
-				$aBlades[$n['slot']]['diagb']=fSplitByColon($fw1[$key]);
-				$aBlades[$n['slot']]['diagv']=fSplitByColon($fw2[$key]);
+				$aSDC['blade'][$n['slot']]['diagb']=fSplitByColon($fw1[$key]);
+				$aSDC['blade'][$n['slot']]['diagv']=fSplitByColon($fw2[$key]);
 				break;
 			case 'Blade Sys Mgmt Processor':
-				$aBlades[$n['slot']]['ismpb']=fSplitByColon($fw1[$key]);
-				$aBlades[$n['slot']]['ismpv']=fSplitByColon($fw2[$key]);
+				$aSDC['blade'][$n['slot']]['ismpb']=fSplitByColon($fw1[$key]);
+				$aSDC['blade'][$n['slot']]['ismpv']=fSplitByColon($fw2[$key]);
 				break;
 			case 'FPGA':
-				$aBlades[$n['slot']]['fpgab']=fSplitByColon($fw1[$key]);
-				$aBlades[$n['slot']]['fpgav']=fSplitByColon($fw2[$key]);
+				$aSDC['blade'][$n['slot']]['fpgab']=fSplitByColon($fw1[$key]);
+				$aSDC['blade'][$n['slot']]['fpgav']=fSplitByColon($fw2[$key]);
 				break;
 			}
 		}
 	}
 	// end firmware shennanigans
 	
-		$aLogfileIndex[$n['mapkey']]['parsed']=$aBlades[$n['slot']];
+		$aLogfileIndex[$n['mapkey']]['parsed']=$aSDC['blade'][$n['slot']];
 }
 
 function fDrawCPU($n,$s) {
-	global $aBlades;
+	global $aSDC;
 
 	// clock speed
 	$speed=fSplitByColon(preg_grep('#Speed#', $s));
-	$aBlades[$n['parentslot']]['cpu'][$n['slot']]=fSplitByColon(preg_grep('#Speed#', $s));
+	$aSDC['blade'][$n['parentslot']]['cpu'][$n['slot']]=fSplitByColon(preg_grep('#Speed#', $s));
 	
 	
 	// cpu identifier
@@ -504,78 +505,77 @@ function fDrawCPU($n,$s) {
 		$extclock=(float)fSplitByColon(preg_grep('#External Clock#', $s));
 		if ($extclock>1000) $extclock=$extclock/1000;
 		$search_string='http://www.google.com/search?hl=en&lr=&q=site%3Aintel.com+'.$c.'+'.$extclock.'+'.$speed.'&btnI=I%27m+Feeling+Lucky';
-		$aBlades[$n['parentslot']]['cpuid'][$n['slot']]=$search_string;
+		$aSDC['blade'][$n['parentslot']]['cpuid'][$n['slot']]=$search_string;
 	}
 	
 	
-	$aLogfileIndex[$n['mapkey']]['parsed']=$aBlades[$n['parentslot']]['cpu'][$n['slot']];
+	$aLogfileIndex[$n['mapkey']]['parsed']=$aSDC['blade'][$n['parentslot']]['cpu'][$n['slot']];
 }
 
 function fDrawMemory($n,$s) {
-	global $aBlades,$aLogfileIndex,$dimmdb,$dimmdbenable;
+	global $aSDC,$aLogfileIndex,$dimmdb,$dimmdbenable;
 
 	/*
-	$aBlades[$n['parentslot']]['memory'][$n['slot']]=fSplitByColon(preg_grep('#Size#', $s));
+	$aSDC['blade'][$n['parentslot']]['memory'][$n['slot']]=fSplitByColon(preg_grep('#Size#', $s));
 	// what does this need to be?
 	// //superfluous: $aLogfileIndex[$n['mapkey']]['fru']==fSplitByColon(preg_grep('#Size#', $s));
-		$aLogfileIndex[$n['mapkey']]['parsed']=$aBlades[$n['parentslot']]['memory'][$n['slot']];
+		$aLogfileIndex[$n['mapkey']]['parsed']=$aSDC['blade'][$n['parentslot']]['memory'][$n['slot']];
 	*/
-	
 
 	// if the memory is in a MAX5 or expansion, the parentslot is always "1"
 	if ($n['depth']==4) {
 		// BEM/MAX5
-		$aBlades[$n['slotpath'][1]]['expansion'][$n['parentslot']]['memory'][$n['slot']]=fSplitByColon(preg_grep('#Size#', $s));
-		$aBlades[$n['slotpath'][1]]['expansion'][$n['parentslot']]['memorypn'][$n['slot']]=fSplitByColon(preg_grep('#Part Number:#', $s));
+		$aSDC['blade'][$n['slotpath'][1]]['expansion'][$n['parentslot']]['memory'][$n['slot']]=fSplitByColon(preg_grep('#Size#', $s));
+		$aSDC['blade'][$n['slotpath'][1]]['expansion'][$n['parentslot']]['memorypn'][$n['slot']]=fSplitByColon(preg_grep('#Part Number:#', $s));
 		if ($dimmdbenable) {
-			$aBlades[$n['slotpath'][1]]['expansion'][$n['parentslot']]['memoryfru'][$n['slot']]=$dimmdb->GetOne('SELECT ibmfru FROM dimmdb WHERE search=', array(dbnorm(fSplitByColon(preg_grep('#Part Number:#', $s)))));
+			$aSDC['blade'][$n['slotpath'][1]]['expansion'][$n['parentslot']]['memoryfru'][$n['slot']]=$dimmdb->GetOne('SELECT ibmfru FROM dimmdb WHERE search=', array(dbnorm(fSplitByColon(preg_grep('#Part Number:#', $s)))));
 			$aLogfileIndex[$n['mapkey']]['parsed']['fru']=$dimmdb->GetOne('SELECT ibmfru FROM dimmdb WHERE search=', array(dbnorm(fSplitByColon(preg_grep('#Part Number:#', $s)))));
 		} else {
-			$aLogfileIndex[$n['mapkey']]['parsed']['fru']=str_replace('(decimal) ','',$aBlades[$n['slotpath'][1]]['expansion'][$n['parentslot']]['memory'][$n['slot']]);
+			$aLogfileIndex[$n['mapkey']]['parsed']['fru']=str_replace('(decimal) ','',$aSDC['blade'][$n['slotpath'][1]]['expansion'][$n['parentslot']]['memory'][$n['slot']]);
 		}
 	} else {
-		$aBlades[$n['parentslot']]['memory'][$n['slot']]=fSplitByColon(preg_grep('#Size#', $s));
-		$aBlades[$n['parentslot']]['memorypn'][$n['slot']]=fSplitByColon(preg_grep('#Part Number:#', $s));
+		$aSDC['blade'][$n['parentslot']]['memory'][$n['slot']]=fSplitByColon(preg_grep('#Size#', $s));
+		$aSDC['blade'][$n['parentslot']]['memorypn'][$n['slot']]=fSplitByColon(preg_grep('#Part Number:#', $s));
 		if ($dimmdbenable) {
-			$aBlades[$n['parentslot']]['memoryfru'][$n['slot']]=$dimmdb->GetOne('SELECT ibmfru FROM dimmdb WHERE search=', array(dbnorm(fSplitByColon(preg_grep('#Part Number:#', $s)))));
+			$aSDC['blade'][$n['parentslot']]['memoryfru'][$n['slot']]=$dimmdb->GetOne('SELECT ibmfru FROM dimmdb WHERE search=', array(dbnorm(fSplitByColon(preg_grep('#Part Number:#', $s)))));
 			$aLogfileIndex[$n['mapkey']]['parsed']['fru']=$dimmdb->GetOne('SELECT ibmfru FROM dimmdb WHERE search=', array(dbnorm(fSplitByColon(preg_grep('#Part Number:#', $s)))));
 		} else {
-			$aLogfileIndex[$n['mapkey']]['parsed']['fru']=str_replace('(decimal) ','',$aBlades[$n['parentslot']]['memory'][$n['slot']]);
+			$aLogfileIndex[$n['mapkey']]['parsed']['fru']=str_replace('(decimal) ','',$aSDC['blade'][$n['parentslot']]['memory'][$n['slot']]);
 		}
 	}
 }
 
 function fDrawScaleCard($n,$s) {
-	global $aBlades,$aLogfileIndex;
+	global $aSDC,$aLogfileIndex;
 	
-	$aBlades[$n['parentslot']]['interconnect']['desc']=fSplitByColon(preg_grep('#Description#', $s));
-	$aBlades[$n['parentslot']]['interconnect']['fru']=fSplitByColon(preg_grep('#Part Number#', $s));
+	$aSDC['blade'][$n['parentslot']]['interconnect']['desc']=fSplitByColon(preg_grep('#Description#', $s));
+	$aSDC['blade'][$n['parentslot']]['interconnect']['fru']=fSplitByColon(preg_grep('#Part Number#', $s));
 	
-	switch($aBlades[$n['parentslot']]['interconnect']['fru']) {
+	switch($aSDC['blade'][$n['parentslot']]['interconnect']['fru']) {
 		// HX5 Speed Burst Card, FRU 59Y5890 (SINGLE-WIDE)
 		// HX5 2-Node Scalability Card, FRU 46M6976 (DOUBLE-WIDE)
 		// MAX5 Node Scalability Card, FRU 59Y5878 (???)
-		case '59Y5890': $aBlades[$n['parentslot']]['interconnect']['name']='HX5 Speed Burst Card'; break;
-		case '46M6976': $aBlades[$n['parentslot']]['interconnect']['name']='HX5 2-Node Scalability Card'; break;
-		case '59Y5878': $aBlades[$n['parentslot']]['interconnect']['name']='MAX5 Node Scalability Card'; break;
+		case '59Y5890': $aSDC['blade'][$n['parentslot']]['interconnect']['name']='HX5 Speed Burst Card'; break;
+		case '46M6976': $aSDC['blade'][$n['parentslot']]['interconnect']['name']='HX5 2-Node Scalability Card'; break;
+		case '59Y5878': $aSDC['blade'][$n['parentslot']]['interconnect']['name']='MAX5 Node Scalability Card'; break;
 	}
 	
-		$aLogfileIndex[$n['mapkey']]['parsed']=$aBlades[$n['parentslot']]['interconnect'];
+		$aLogfileIndex[$n['mapkey']]['parsed']=$aSDC['blade'][$n['parentslot']]['interconnect'];
 }
 
 function fDrawHBA($n,$s,$hs=0) {
-	global $aBlades,$aLogfileIndex;
+	global $aSDC,$aLogfileIndex;
 	
 	($hs)?$slotname='hshba':$slotname='hba';
 	
 	// if the hba is in an expansion, the parentslot is always "1"
 	($n['depth']==4)?$slotdepth=$n['slotpath'][1]:$slotdepth=$n['parentslot'];
 	
-	$aBlades[$slotdepth][$slotname][$n['slot']]['desc']=fSplitByColon(preg_grep('#Description#', $s));
-	$aBlades[$slotdepth][$slotname][$n['slot']]['name']=fSplitByColon(preg_grep('#Product Name#', $s));
-	$aBlades[$slotdepth][$slotname][$n['slot']]['manuf']=fSplitByColon(preg_grep('#Manufacturer ID#', $s));
-	$aBlades[$slotdepth][$slotname][$n['slot']]['fru']=fSplitByColon(preg_grep('#FRU Number#', $s));
-		//superfluous: $aLogfileIndex[$n['mapkey']]['fru']=$aBlades[$slotdepth][$slotname][$n['slot']]['fru'];
+	$aSDC['blade'][$slotdepth][$slotname][$n['slot']]['desc']=fSplitByColon(preg_grep('#Description#', $s));
+	$aSDC['blade'][$slotdepth][$slotname][$n['slot']]['name']=fSplitByColon(preg_grep('#Product Name#', $s));
+	$aSDC['blade'][$slotdepth][$slotname][$n['slot']]['manuf']=fSplitByColon(preg_grep('#Manufacturer ID#', $s));
+	$aSDC['blade'][$slotdepth][$slotname][$n['slot']]['fru']=fSplitByColon(preg_grep('#FRU Number#', $s));
+		//superfluous: $aLogfileIndex[$n['mapkey']]['fru']=$aSDC['blade'][$slotdepth][$slotname][$n['slot']]['fru'];
 	
 	// get the port info
 	$ports=array_values(preg_grep('#Topology Path ID#', $s));
@@ -585,95 +585,95 @@ function fDrawHBA($n,$s,$hs=0) {
 	$addr=array_values(preg_grep('#Link Ifc Addr in use#', $s));
 	
 	foreach ($ports as $index => $each) {
-		$aBlades[$slotdepth][$slotname][$n['slot']]['port'][fSplitByColon($each)]['port']=fSplitByColon($ports[$index]);
-		$aBlades[$slotdepth][$slotname][$n['slot']]['port'][fSplitByColon($each)]['type']=fSplitByColon($type[$index]);
-		$aBlades[$slotdepth][$slotname][$n['slot']]['port'][fSplitByColon($each)]['speed']=fSplitByColon($speed[$index]);
-		$aBlades[$slotdepth][$slotname][$n['slot']]['port'][fSplitByColon($each)]['protocol']=fSplitByColon($protocol[$index]);
-		$aBlades[$slotdepth][$slotname][$n['slot']]['port'][fSplitByColon($each)]['addr']=fSplitByColon($addr[$index]);
+		$aSDC['blade'][$slotdepth][$slotname][$n['slot']]['port'][fSplitByColon($each)]['port']=fSplitByColon($ports[$index]);
+		$aSDC['blade'][$slotdepth][$slotname][$n['slot']]['port'][fSplitByColon($each)]['type']=fSplitByColon($type[$index]);
+		$aSDC['blade'][$slotdepth][$slotname][$n['slot']]['port'][fSplitByColon($each)]['speed']=fSplitByColon($speed[$index]);
+		$aSDC['blade'][$slotdepth][$slotname][$n['slot']]['port'][fSplitByColon($each)]['protocol']=fSplitByColon($protocol[$index]);
+		$aSDC['blade'][$slotdepth][$slotname][$n['slot']]['port'][fSplitByColon($each)]['addr']=fSplitByColon($addr[$index]);
 	}
-		$aLogfileIndex[$n['mapkey']]['parsed']=$aBlades[$slotdepth][$slotname][$n['slot']];
+		$aLogfileIndex[$n['mapkey']]['parsed']=$aSDC['blade'][$slotdepth][$slotname][$n['slot']];
 }
 
 function fDrawCKVM($n,$s) {
-	global $aBlades,$aLogfileIndex;
+	global $aSDC,$aLogfileIndex;
 	
-	$aBlades[$n['parentslot']]['ckvm'][$n['slot']]['name']=fSplitByColon(preg_grep('#Product Name#', $s));
-	$aBlades[$n['parentslot']]['ckvm'][$n['slot']]['desc']=fSplitByColon(preg_grep('#Description#', $s));
-	$aBlades[$n['parentslot']]['ckvm'][$n['slot']]['fru']=fSplitByColon(preg_grep('#FRU Number#', $s));
-	$aBlades[$n['parentslot']]['ckvm'][$n['slot']]['pn']=fSplitByColon(preg_grep('#Part Number#', $s));
-		//superfluous: $aLogfileIndex[$n['mapkey']]['fru']=$aBlades[$n['parentslot']]['ckvm'][$n['slot']]['fru'];
-		$aLogfileIndex[$n['mapkey']]['parsed']=$aBlades[$n['parentslot']]['ckvm'][$n['slot']];
+	$aSDC['blade'][$n['parentslot']]['ckvm'][$n['slot']]['name']=fSplitByColon(preg_grep('#Product Name#', $s));
+	$aSDC['blade'][$n['parentslot']]['ckvm'][$n['slot']]['desc']=fSplitByColon(preg_grep('#Description#', $s));
+	$aSDC['blade'][$n['parentslot']]['ckvm'][$n['slot']]['fru']=fSplitByColon(preg_grep('#FRU Number#', $s));
+	$aSDC['blade'][$n['parentslot']]['ckvm'][$n['slot']]['pn']=fSplitByColon(preg_grep('#Part Number#', $s));
+		//superfluous: $aLogfileIndex[$n['mapkey']]['fru']=$aSDC['blade'][$n['parentslot']]['ckvm'][$n['slot']]['fru'];
+		$aLogfileIndex[$n['mapkey']]['parsed']=$aSDC['blade'][$n['parentslot']]['ckvm'][$n['slot']];
 }
 
 function fDrawMgmtCard($n,$s) {
-	global $aBlades,$aLogfileIndex;
+	global $aSDC,$aLogfileIndex;
 	
-	$aBlades[$n['parentslot']]['mgmt'][$n['slot']]['desc']=fSplitByColon(preg_grep('#Product Name#', $s));
-	$aBlades[$n['parentslot']]['mgmt'][$n['slot']]['fru']=fSplitByColon(preg_grep('#FRU Number#', $s));
-		//superfluous: $aLogfileIndex[$n['mapkey']]['fru']=$aBlades[$n['parentslot']]['mgmt'][$n['slot']]['fru'];
-		$aLogfileIndex[$n['mapkey']]['parsed']=$aBlades[$n['parentslot']]['mgmt'][$n['slot']];
+	$aSDC['blade'][$n['parentslot']]['mgmt'][$n['slot']]['desc']=fSplitByColon(preg_grep('#Product Name#', $s));
+	$aSDC['blade'][$n['parentslot']]['mgmt'][$n['slot']]['fru']=fSplitByColon(preg_grep('#FRU Number#', $s));
+		//superfluous: $aLogfileIndex[$n['mapkey']]['fru']=$aSDC['blade'][$n['parentslot']]['mgmt'][$n['slot']]['fru'];
+		$aLogfileIndex[$n['mapkey']]['parsed']=$aSDC['blade'][$n['parentslot']]['mgmt'][$n['slot']];
 }
 
 
 function fDrawExpansion($n,$s) {
-	global $aBlades,$aLogfileIndex;
+	global $aSDC,$aLogfileIndex;
 	
-	$aBlades[$n['parentslot']]['expansion'][$n['slot']]['name']=fSplitByColon(preg_grep('#Product Name#', $s));
-	$aBlades[$n['parentslot']]['expansion'][$n['slot']]['desc']=fSplitByColon(preg_grep('#Description #', $s));
-	$aBlades[$n['parentslot']]['expansion'][$n['slot']]['fru']=fSplitByColon(preg_grep('#FRU Number#', $s));
+	$aSDC['blade'][$n['parentslot']]['expansion'][$n['slot']]['name']=fSplitByColon(preg_grep('#Product Name#', $s));
+	$aSDC['blade'][$n['parentslot']]['expansion'][$n['slot']]['desc']=fSplitByColon(preg_grep('#Description #', $s));
+	$aSDC['blade'][$n['parentslot']]['expansion'][$n['slot']]['fru']=fSplitByColon(preg_grep('#FRU Number#', $s));
 	
 	// if the name is blank, let's name it ourselves
-	if (!$aBlades[$n['parentslot']]['expansion'][$n['slot']]['name']) {
-		switch($aBlades[$n['parentslot']]['expansion'][$n['slot']]['fru']) {
-			case '46M6974': $aBlades[$n['parentslot']]['expansion'][$n['slot']]['name']='IBM MAX5 expansion blade'; break;
+	if (!$aSDC['blade'][$n['parentslot']]['expansion'][$n['slot']]['name']) {
+		switch($aSDC['blade'][$n['parentslot']]['expansion'][$n['slot']]['fru']) {
+			case '46M6974': $aSDC['blade'][$n['parentslot']]['expansion'][$n['slot']]['name']='IBM MAX5 expansion blade'; break;
 		}
 	}
-	$aLogfileIndex[$n['mapkey']]['parsed']=$aBlades[$n['parentslot']]['expansion'][$n['slot']];
+	$aLogfileIndex[$n['mapkey']]['parsed']=$aSDC['blade'][$n['parentslot']]['expansion'][$n['slot']];
 }
 
 function fDrawPower($n,$s) {
-	global $aPower,$aLogfileIndex;
+	global $aSDC,$aLogfileIndex;
 	
-	$aPower[$n['slot']]['desc']=fSplitByColon(preg_grep('#Description #', $s));
-	$aPower[$n['slot']]['fru']=fSplitByColon(preg_grep('#FRU Number#', $s));
-		//superfluous: $aLogfileIndex[$n['mapkey']]['fru']=$aPower[$n['slot']]['fru'];
-	$aPower[$n['slot']]['watts']=hexdec(preg_replace('/[^0-9A-Fa-f]/','',fSplitByColon(preg_grep('#Reading#', $s),2)));
-	//$aPower[$n['slot']]['watts']=fSplitByColon(preg_grep('#Reading#', $s),2);
-		$aLogfileIndex[$n['mapkey']]['parsed']=$aPower[$n['slot']];
+	$aSDC['power'][$n['slot']]['desc']=fSplitByColon(preg_grep('#Description #', $s));
+	$aSDC['power'][$n['slot']]['fru']=fSplitByColon(preg_grep('#FRU Number#', $s));
+		//superfluous: $aLogfileIndex[$n['mapkey']]['fru']=$aSDC['power'][$n['slot']]['fru'];
+	$aSDC['power'][$n['slot']]['watts']=hexdec(preg_replace('/[^0-9A-Fa-f]/','',fSplitByColon(preg_grep('#Reading#', $s),2)));
+	//$aSDC['power'][$n['slot']]['watts']=fSplitByColon(preg_grep('#Reading#', $s),2);
+		$aLogfileIndex[$n['mapkey']]['parsed']=$aSDC['power'][$n['slot']];
 }
 
 function fDrawCooling($n,$s) {
-	global $aPower,$aCooling,$aLogfileIndex;
+	global $aSDC,$aLogfileIndex;
 	
 	$description=fSplitByColon(preg_grep('#Description #', $s));
 	
 	if ($description=='PM Cooling Device') { // power module
-		$aPower[$n['parentslot']]['cooling'.$n['slot']]['desc']=$description;
+		$aSDC['power'][$n['parentslot']]['cooling'.$n['slot']]['desc']=$description;
 		
 		// grabs the RPM in hex and converts
-		$aPower[$n['parentslot']]['cooling'.$n['slot']]['temporary']=preg_grep('#Reading#', $s);
-		$aPower[$n['parentslot']]['cooling'.$n['slot']]['temporary']=array_values($aPower[$n['parentslot']]['cooling'.$n['slot']]['temporary']);
-		$aPower[$n['parentslot']]['cooling'.$n['slot']]['rpm']=hexdec(preg_replace('/[^0-9A-Fa-f]/','',fSplitByColon($aPower[$n['parentslot']]['cooling'.$n['slot']]['temporary'][1],2)));
-		unset($aPower[$n['parentslot']]['cooling'.$n['slot']]['temporary']);
-			$aLogfileIndex[$n['mapkey']]['parsed']=$aPower[$n['parentslot']]['cooling'.$n['slot']];
+		$aSDC['power'][$n['parentslot']]['cooling'.$n['slot']]['temporary']=preg_grep('#Reading#', $s);
+		$aSDC['power'][$n['parentslot']]['cooling'.$n['slot']]['temporary']=array_values($aSDC['power'][$n['parentslot']]['cooling'.$n['slot']]['temporary']);
+		$aSDC['power'][$n['parentslot']]['cooling'.$n['slot']]['rpm']=hexdec(preg_replace('/[^0-9A-Fa-f]/','',fSplitByColon($aSDC['power'][$n['parentslot']]['cooling'.$n['slot']]['temporary'][1],2)));
+		unset($aSDC['power'][$n['parentslot']]['cooling'.$n['slot']]['temporary']);
+			$aLogfileIndex[$n['mapkey']]['parsed']=$aSDC['power'][$n['parentslot']]['cooling'.$n['slot']];
 
 	} elseif ($description=='Chassis Cooling Dev') { // chassis blower
 		// chassis blower stuff
-		$aCooling[$n['slot']]['desc']=fSplitByColon(preg_grep('#Description #', $s));
-		$aCooling[$n['slot']]['fru']=fSplitByColon(preg_grep('#FRU Number#', $s));
-			//superfluous: $aLogfileIndex[$n['mapkey']]['fru']=$aCooling[$n['slot']]['fru'];
+		$aSDC['cooling'][$n['slot']]['desc']=fSplitByColon(preg_grep('#Description #', $s));
+		$aSDC['cooling'][$n['slot']]['fru']=fSplitByColon(preg_grep('#FRU Number#', $s));
+			//superfluous: $aLogfileIndex[$n['mapkey']]['fru']=$aSDC['cooling'][$n['slot']]['fru'];
 
 		// grabs the RPM in hex and converts
-		$aCooling[$n['slot']]['temporary']=preg_grep('#Reading#', $s);
-		$aCooling[$n['slot']]['temporary']=array_values($aCooling[$n['slot']]['temporary']);
-		$aCooling[$n['slot']]['rpm']=hexdec(preg_replace('/[^0-9A-Fa-f]/','',fSplitByColon($aCooling[$n['slot']]['temporary'][1],2)));
-		unset($aCooling[$n['slot']]['temporary']);
-			$aLogfileIndex[$n['mapkey']]['parsed']=$aCooling[$n['slot']];
+		$aSDC['cooling'][$n['slot']]['temporary']=preg_grep('#Reading#', $s);
+		$aSDC['cooling'][$n['slot']]['temporary']=array_values($aSDC['cooling'][$n['slot']]['temporary']);
+		$aSDC['cooling'][$n['slot']]['rpm']=hexdec(preg_replace('/[^0-9A-Fa-f]/','',fSplitByColon($aSDC['cooling'][$n['slot']]['temporary'][1],2)));
+		unset($aSDC['cooling'][$n['slot']]['temporary']);
+			$aLogfileIndex[$n['mapkey']]['parsed']=$aSDC['cooling'][$n['slot']];
 	}
 }
 
 function fDrawIO($n,$s) {
-	global $aIO,$aLogfileIndex;
+	global $aSDC,$aLogfileIndex;
 	
 	// interposer detection: is this logic always correct?
 	// if (is iomodule) & (parent = 7|9) = is iomodule in interposer
@@ -688,13 +688,13 @@ function fDrawIO($n,$s) {
 		}
 	}
 	
-	$aIO[$iobay]['desc']=fSplitByColon(preg_grep('#Description#', $s));
-	$aIO[$iobay]['type']=fSplitByColon(preg_grep('#Sub Type#', $s));
-	$aIO[$iobay]['pn']=fSplitByColon(preg_grep('#Part Number#', $s));
-	$aIO[$iobay]['fru']=fSplitByColon(preg_grep('#FRU Number#', $s));
-		//superfluous: $aLogfileIndex[$n['mapkey']]['fru']=$aIO[$iobay]['fru'];
-	$aIO[$iobay]['manuf']=fSplitByColon(preg_grep('#Manufacturer ID#', $s));
-	$aIO[$iobay]['name']=fSplitByColon(preg_grep('#Product Name#', $s));
+	$aSDC['io'][$iobay]['desc']=fSplitByColon(preg_grep('#Description#', $s));
+	$aSDC['io'][$iobay]['type']=fSplitByColon(preg_grep('#Sub Type#', $s));
+	$aSDC['io'][$iobay]['pn']=fSplitByColon(preg_grep('#Part Number#', $s));
+	$aSDC['io'][$iobay]['fru']=fSplitByColon(preg_grep('#FRU Number#', $s));
+		//superfluous: $aLogfileIndex[$n['mapkey']]['fru']=$aSDC['io'][$iobay]['fru'];
+	$aSDC['io'][$iobay]['manuf']=fSplitByColon(preg_grep('#Manufacturer ID#', $s));
+	$aSDC['io'][$iobay]['name']=fSplitByColon(preg_grep('#Product Name#', $s));
 	
 	// OMG FIRMWARE
 	
@@ -722,89 +722,89 @@ function fDrawIO($n,$s) {
 		
 		foreach ($fw_bid as $index => $each) {
 			//fSplitByColon($each)
-			$aIO[$iobay]['fw'][$index]['type']=fSplitByColon($fw_type[$index]);
-			$aIO[$iobay]['fw'][$index]['buildid']=fSplitByColon($fw_bid[$index]);
-			$aIO[$iobay]['fw'][$index]['filename']=fSplitByColon($fw_ftype[$index]);
-			$aIO[$iobay]['fw'][$index]['date']=fSplitByColon($fw_date[$index]);
-			$aIO[$iobay]['fw'][$index]['level']=fSplitByColon($fw_level[$index]);
-			$aIO[$iobay]['fw'][$index]['version']=fSplitByColon($fw_version[$index]);
+			$aSDC['io'][$iobay]['fw'][$index]['type']=fSplitByColon($fw_type[$index]);
+			$aSDC['io'][$iobay]['fw'][$index]['buildid']=fSplitByColon($fw_bid[$index]);
+			$aSDC['io'][$iobay]['fw'][$index]['filename']=fSplitByColon($fw_ftype[$index]);
+			$aSDC['io'][$iobay]['fw'][$index]['date']=fSplitByColon($fw_date[$index]);
+			$aSDC['io'][$iobay]['fw'][$index]['level']=fSplitByColon($fw_level[$index]);
+			$aSDC['io'][$iobay]['fw'][$index]['version']=fSplitByColon($fw_version[$index]);
 		}
 	}
 	
 	// ip info
 	// first four here may need to be modified to be include "not 2nd"
-	$aIO[$iobay]['mac1']=fSplitByColon(preg_grep('#MAC address#', $s));
-	$aIO[$iobay]['ip1']=fSplitByColon(preg_grep('#IP Address#', $s));
-	$aIO[$iobay]['subnet1']=fSplitByColon(preg_grep('#Subnet Mask#', $s));
-	$aIO[$iobay]['gw1']=fSplitByColon(preg_grep('#Gateway#', $s));
+	$aSDC['io'][$iobay]['mac1']=fSplitByColon(preg_grep('#MAC address#', $s));
+	$aSDC['io'][$iobay]['ip1']=fSplitByColon(preg_grep('#IP Address#', $s));
+	$aSDC['io'][$iobay]['subnet1']=fSplitByColon(preg_grep('#Subnet Mask#', $s));
+	$aSDC['io'][$iobay]['gw1']=fSplitByColon(preg_grep('#Gateway#', $s));
 	
-	$aIO[$iobay]['mac2']=fSplitByColon(preg_grep('#2nd MAC address#', $s));
-	$aIO[$iobay]['ip2']=fSplitByColon(preg_grep('#2nd IP Address#', $s));
-	$aIO[$iobay]['subnet2']=fSplitByColon(preg_grep('#2nd Subnet Mask#', $s));
-	$aIO[$iobay]['gw2']=fSplitByColon(preg_grep('#2nd Gateway#', $s));
-	$aIO[$iobay]['vlan']=fSplitByColon(preg_grep('#VLAN ID#', $s));
-	$aIO[$iobay]['configmgmt']=fSplitByColon(preg_grep('#Configuration Management Status#', $s));
-	$aIO[$iobay]['power']=fSplitByColon(preg_grep('#Power State#', $s));
-	$aIO[$iobay]['stacking']=fSplitByColon(preg_grep('#Stacking Mode#', $s));
-	$aIO[$iobay]['protected']=fSplitByColon(preg_grep('#Protected Mode#', $s));
-	$aIO[$iobay]['poststatus']=fSplitByColon(preg_grep('#POST results available#', $s));
-	$aIO[$iobay]['ext-current']=fSplitByColon(preg_grep('#IOM External ports configuration (current)#', $s));
-	$aIO[$iobay]['ext']=fSplitByColon(preg_grep('#IOM External ports configuration:#', $s));
-		$aLogfileIndex[$n['mapkey']]['parsed']=$aIO[$iobay];
+	$aSDC['io'][$iobay]['mac2']=fSplitByColon(preg_grep('#2nd MAC address#', $s));
+	$aSDC['io'][$iobay]['ip2']=fSplitByColon(preg_grep('#2nd IP Address#', $s));
+	$aSDC['io'][$iobay]['subnet2']=fSplitByColon(preg_grep('#2nd Subnet Mask#', $s));
+	$aSDC['io'][$iobay]['gw2']=fSplitByColon(preg_grep('#2nd Gateway#', $s));
+	$aSDC['io'][$iobay]['vlan']=fSplitByColon(preg_grep('#VLAN ID#', $s));
+	$aSDC['io'][$iobay]['configmgmt']=fSplitByColon(preg_grep('#Configuration Management Status#', $s));
+	$aSDC['io'][$iobay]['power']=fSplitByColon(preg_grep('#Power State#', $s));
+	$aSDC['io'][$iobay]['stacking']=fSplitByColon(preg_grep('#Stacking Mode#', $s));
+	$aSDC['io'][$iobay]['protected']=fSplitByColon(preg_grep('#Protected Mode#', $s));
+	$aSDC['io'][$iobay]['poststatus']=fSplitByColon(preg_grep('#POST results available#', $s));
+	$aSDC['io'][$iobay]['ext-current']=fSplitByColon(preg_grep('#IOM External ports configuration (current)#', $s));
+	$aSDC['io'][$iobay]['ext']=fSplitByColon(preg_grep('#IOM External ports configuration:#', $s));
+		$aLogfileIndex[$n['mapkey']]['parsed']=$aSDC['io'][$iobay];
 }
 
 function fDrawRSSM($n,$s) {
-	global $aIO,$aLogfileIndex;
+	global $aSDC,$aLogfileIndex;
 	
-	$aIO[$n['parentslot']]['rssm']['slot']=$n['slot'];
-	$aIO[$n['parentslot']]['rssm']['desc']=fSplitByColon(preg_grep('#Description#', $s));
-	$aIO[$n['parentslot']]['rssm']['mac']=fSplitByColon(preg_grep('#Link Ifc Addr in use#', $s));
-		$aLogfileIndex[$n['mapkey']]['parsed']=$aIO[$n['parentslot']]['rssm'];
+	$aSDC['io'][$n['parentslot']]['rssm']['slot']=$n['slot'];
+	$aSDC['io'][$n['parentslot']]['rssm']['desc']=fSplitByColon(preg_grep('#Description#', $s));
+	$aSDC['io'][$n['parentslot']]['rssm']['mac']=fSplitByColon(preg_grep('#Link Ifc Addr in use#', $s));
+		$aLogfileIndex[$n['mapkey']]['parsed']=$aSDC['io'][$n['parentslot']]['rssm'];
 }
 
 function fDrawSTModule($n,$s) {
-	global $aStorage,$aLogfileIndex;
+	global $aSDC,$aLogfileIndex;
 	
-	$aStorage[$n['slot']]['desc']=fSplitByColon(preg_grep('#Description#', $s));
-	$aStorage[$n['slot']]['name']=fSplitByColon(preg_grep('#Product Name#', $s));
-	$aStorage[$n['slot']]['fru']=fSplitByColon(preg_grep('#FRU Number#', $s));
-	$aStorage[$n['slot']]['pn']=fSplitByColon(preg_grep('#Part Number#', $s));
-	$aStorage[$n['slot']]['buildid']=fSplitByColon(preg_grep('#Build ID#', $s));
-	$aStorage[$n['slot']]['rlevel']=fSplitByColon(preg_grep('#Release Level#', $s));
-		$aLogfileIndex[$n['mapkey']]['parsed']=$aStorage[$n['slot']];
+	$aSDC['storage'][$n['slot']]['desc']=fSplitByColon(preg_grep('#Description#', $s));
+	$aSDC['storage'][$n['slot']]['name']=fSplitByColon(preg_grep('#Product Name#', $s));
+	$aSDC['storage'][$n['slot']]['fru']=fSplitByColon(preg_grep('#FRU Number#', $s));
+	$aSDC['storage'][$n['slot']]['pn']=fSplitByColon(preg_grep('#Part Number#', $s));
+	$aSDC['storage'][$n['slot']]['buildid']=fSplitByColon(preg_grep('#Build ID#', $s));
+	$aSDC['storage'][$n['slot']]['rlevel']=fSplitByColon(preg_grep('#Release Level#', $s));
+		$aLogfileIndex[$n['mapkey']]['parsed']=$aSDC['storage'][$n['slot']];
 }
 
 function fDrawMSIM($n,$s) {
-	global $aMSIM,$aLogfileIndex;
+	global $aSDC,$aLogfileIndex;
 
-	$aMSIM[$n['slot']]['desc']=fSplitByColon(preg_grep('#Description#', $s));
-	$aMSIM[$n['slot']]['name']=fSplitByColon(preg_grep('#Product Name#', $s));
-	$aMSIM[$n['slot']]['fru']=fSplitByColon(preg_grep('#FRU Number#', $s));
-	$aMSIM[$n['slot']]['pn']=fSplitByColon(preg_grep('#Part Number#', $s));
-		$aLogfileIndex[$n['mapkey']]['parsed']=$aMSIM[$n['slot']];
+	$aSDC['msim'][$n['slot']]['desc']=fSplitByColon(preg_grep('#Description#', $s));
+	$aSDC['msim'][$n['slot']]['name']=fSplitByColon(preg_grep('#Product Name#', $s));
+	$aSDC['msim'][$n['slot']]['fru']=fSplitByColon(preg_grep('#FRU Number#', $s));
+	$aSDC['msim'][$n['slot']]['pn']=fSplitByColon(preg_grep('#Part Number#', $s));
+		$aLogfileIndex[$n['mapkey']]['parsed']=$aSDC['msim'][$n['slot']];
 }
 
 function fDrawMediaTray($n,$s) {
-	global $aMedia,$aLogfileIndex;
+	global $aSDC,$aLogfileIndex;
 
-	$aMedia[$n['slot']]['desc']=fSplitByColon(preg_grep('#Description#', $s));
-	$aMedia[$n['slot']]['name']=fSplitByColon(preg_grep('#Product Name#', $s));
-	$aMedia[$n['slot']]['fru']=fSplitByColon(preg_grep('#FRU Number#', $s));
-	$aMedia[$n['slot']]['pn']=fSplitByColon(preg_grep('#Part Number#', $s));
-		$aLogfileIndex[$n['mapkey']]['parsed']=$aMedia[$n['slot']];
+	$aSDC['mediatray'][$n['slot']]['desc']=fSplitByColon(preg_grep('#Description#', $s));
+	$aSDC['mediatray'][$n['slot']]['name']=fSplitByColon(preg_grep('#Product Name#', $s));
+	$aSDC['mediatray'][$n['slot']]['fru']=fSplitByColon(preg_grep('#FRU Number#', $s));
+	$aSDC['mediatray'][$n['slot']]['pn']=fSplitByColon(preg_grep('#Part Number#', $s));
+		$aLogfileIndex[$n['mapkey']]['parsed']=$aSDC['mediatray'][$n['slot']];
 }
 
 function fDrawBattery($n,$s) {
-	global $aMedia,$aBlades,$aLogfileIndex;
+	global $aSDC,$aLogfileIndex;
 
 	if (substr_count($n[parent],"BLADE")) { // MR10ie batteries
-		$aBlades[$n['parentslot']]['battery']=$n['slot'];
-			$aLogfileIndex[$n['mapkey']]['parsed']=$aBlades[$n['parentslot']]['battery'];
+		$aSDC['blade'][$n['parentslot']]['battery']=$n['slot'];
+			$aLogfileIndex[$n['mapkey']]['parsed']=$aSDC['blade'][$n['parentslot']]['battery'];
 	} elseif (substr_count($n[parent],"MEDIA_MOD")) { //  BC-S media tray batteries
-		$aMedia[$n['parentslot']]['battery'.$n['slot']]['desc']=fSplitByColon(preg_grep('#Description#', $s));
-		$aMedia[$n['parentslot']]['battery'.$n['slot']]['manuf']=fSplitByColon(preg_grep('#Manufacturer Sub ID#', $s));
-		$aMedia[$n['parentslot']]['battery'.$n['slot']]['fru']=fSplitByColon(preg_grep('#FRU Number#', $s));
-			$aLogfileIndex[$n['mapkey']]['parsed']=$aMedia[$n['parentslot']]['battery'.$n['slot']];
+		$aSDC['mediatray'][$n['parentslot']]['battery'.$n['slot']]['desc']=fSplitByColon(preg_grep('#Description#', $s));
+		$aSDC['mediatray'][$n['parentslot']]['battery'.$n['slot']]['manuf']=fSplitByColon(preg_grep('#Manufacturer Sub ID#', $s));
+		$aSDC['mediatray'][$n['parentslot']]['battery'.$n['slot']]['fru']=fSplitByColon(preg_grep('#FRU Number#', $s));
+			$aLogfileIndex[$n['mapkey']]['parsed']=$aSDC['mediatray'][$n['parentslot']]['battery'.$n['slot']];
 	} else {
 		fDrawDefault($n,$s);
 	}
@@ -824,23 +824,23 @@ function fDrawEvt($n,$s) {
 		}
 	}
 	
-	global $aEvt;
-	$aEvt=$returnvalue;
+	global $aSDC;
+	$aSDC['evt']=$returnvalue;
 }
 
 function fDrawScaleData($n,$s) {
-	global $aScale,$aBlades;
+	global $aSDC;
 
 	foreach ($s as $key => $value) {
 		$tempdata[]=$value;
 	}
-	$aScale['parsed']['count']=fSplitByColon(preg_grep('#Number of Scalable Complexes:#', $s));
+	$aSDC['scale']['parsed']['count']=fSplitByColon(preg_grep('#Number of Scalable Complexes:#', $s));
 	$startlines=preg_grep('#Complex Descriptor #', $tempdata);
 	//$startlines[count($tempdata)]='endline';
 	$startlines=array_keys($startlines);
 	
-	// $aScale['parsed']['count']=count($startlines);
-	// $aScale['parsed']['complexes']=$startlines;
+	// $aSDC['scale']['parsed']['count']=count($startlines);
+	// $aSDC['scale']['parsed']['complexes']=$startlines;
 	
 	foreach ($startlines as $key => $value) {
 		$complex['linestart']=$value;
@@ -879,7 +879,7 @@ function fDrawScaleData($n,$s) {
 			$complex['nodedetails'][$nodekey]['flags']=fSplitByColon(preg_grep('#Partition Flags:#',$complex['nodedetails'][$nodekey]['data']));
 			
 			// assign the blades array with complex identification info
-			$aBlades[$complex['nodedetails'][$nodekey]['bladeslot']]['complex']=(count($aScale['parsed']['complex'])+1);
+			$aSDC['blade'][$complex['nodedetails'][$nodekey]['bladeslot']]['complex']=(count($aSDC['scale']['parsed']['complex'])+1);
 			
 			unset($complex['nodedetails'][$nodekey]['linestart']);
 			unset($complex['nodedetails'][$nodekey]['lineend']);
@@ -887,47 +887,47 @@ function fDrawScaleData($n,$s) {
 		}
 		
 		unset($complex['data']);
-		$aScale['parsed']['complex'][]=$complex;
+		$aSDC['scale']['parsed']['complex'][]=$complex;
 		unset($complex);
 	}
 	
 	// returns data by default
-	$aScale['scale']=$tempdata;
+	$aSDC['scale']['scale']=$tempdata;
 }
 
 
 function fDrawFuelGauge($n,$s) {
-	global $aPowerMeta;
+	global $aSDC;
 
 	foreach ($s as $key => $value) {
-		$aPowerMeta['rawgauge'][]=$value;
+		$aSDC['powermeta']['rawgauge'][]=$value;
 	}
 }
 
 function fDrawLicenses($n,$s) {
-	global $aLicenses;
+	global $aSDC;
 	
-	$aLicenses['features']['BOFM']='IBM BladeCenter Open Fabric Manager';
-	$aLicenses['features']['BOFM-advanced']='IBM BladeCenter Advanced Open Fabric Manager  ';
-	$aLicenses['features']['BOFM-plugin']='IBM BladeCenter Advanced Open Fabric Manager Plug-in';
+	$aSDC['licenses']['features']['BOFM']='IBM BladeCenter Open Fabric Manager';
+	$aSDC['licenses']['features']['BOFM-advanced']='IBM BladeCenter Advanced Open Fabric Manager  ';
+	$aSDC['licenses']['features']['BOFM-plugin']='IBM BladeCenter Advanced Open Fabric Manager Plug-in';
 	
-	foreach ($aLicenses['features'] as $key => $value) {
-		$aLicenses['temp']=preg_grep('#'.$value.'#', $s);
-		$aLicenses['temp']=array_values($aLicenses['temp']);
-		$aLicenses['temp']=array_flip(array_flip(explode('      ',trim(str_replace($value,'',$aLicenses['temp'][0])))));
+	foreach ($aSDC['licenses']['features'] as $key => $value) {
+		$aSDC['licenses']['temp']=preg_grep('#'.$value.'#', $s);
+		$aSDC['licenses']['temp']=array_values($aSDC['licenses']['temp']);
+		$aSDC['licenses']['temp']=array_flip(array_flip(explode('      ',trim(str_replace($value,'',$aSDC['licenses']['temp'][0])))));
 
-		if (count($aLicenses['temp'])<2) {
-			$aLicenses[$key]['status']=$aLicenses['temp'][0];
+		if (count($aSDC['licenses']['temp'])<2) {
+			$aSDC['licenses'][$key]['status']=$aSDC['licenses']['temp'][0];
 		} else {
-			$aLicenses[$key]['key']=$aLicenses['temp'][0];
-			$aLicenses[$key]['status']=trim($aLicenses['temp'][1]);
+			$aSDC['licenses'][$key]['key']=$aSDC['licenses']['temp'][0];
+			$aSDC['licenses'][$key]['status']=trim($aSDC['licenses']['temp'][1]);
 		}
 		
-		unset($aLicenses['temp']);
+		unset($aSDC['licenses']['temp']);
 	}
 	
 	foreach ($s as $key => $value) {
-		$aLicenses['details'][]=trim($value);
+		$aSDC['licenses']['details'][]=trim($value);
 	}
 }
 
@@ -1035,33 +1035,33 @@ function fTimer($which,$start=FALSE) {
 
 
 function fSummarize($e=0) {
-	global $aMeta, $aChassis, $aMgmt, $aBlades, $aIO, $aMSIM, $aStorage, $aPower, $aCooling, $aMedia, $aLicenses;
+	global $aSDC;
 	
 	// header
-	$output[]='<div class="summaryline">Summary Data from '.date("l, j F Y g:ia (H:i:s)",strtotime($aMeta[time])).'</div>';
-	$output[]='<div class="summaryline"> - Service Data from chassis '.$aMeta[name].' @ '.$aMeta[ammip].'</div>';
+	$output[]='<div class="summaryline">Summary Data from '.date("l, j F Y g:ia (H:i:s)",strtotime($aSDC['meta']['time'])).'</div>';
+	$output[]='<div class="summaryline"> - Service Data from chassis '.$aSDC['meta']['name'].' @ '.$aSDC['meta']['ammip'].'</div>';
 	
 	// chassis
-	if (count($aChassis)) {
-		foreach ($aChassis as $key => $chassis) {
-			$output[]='<div class="summaryline">'.$chassis[mtm].'/'.$chassis[sn].' '.$chassis[type].'; power mode '.$chassis[power].', chassis FRU '.$chassis[fru].'</div>';
+	if (count($aSDC['chassis'])) {
+		foreach ($aSDC['chassis'] as $key => $chassis) {
+			$output[]='<div class="summaryline">'.$chassis['mtm'].'/'.$chassis['sn'].' '.$chassis['type'].'; power mode '.$chassis['power'].', chassis FRU '.$chassis['fru'].'</div>';
 		}
 		// line break
 		$output[]='<div class="summarybreak">&nbsp;</div>';
 	}
 	
 	// amms
-	if (count($aMgmt)) {
-		foreach ($aMgmt as $key => $amm) {
-			$output[]='<div class="summaryline">AMM in slot '.$key.' is "'.$amm[role].'" running '.$amm[fw].'; FRU '.$amm[fru].', MAC '.$amm[mac].' ('.$amm[conf].')</div>';
+	if (count($aSDC['mgmt'])) {
+		foreach ($aSDC['mgmt'] as $key => $amm) {
+			$output[]='<div class="summaryline">AMM in slot '.$key.' is "'.$amm['role'].'" running '.$amm['fw'].'; FRU '.$amm['fru'].', MAC '.$amm['mac'].' ('.$amm['conf'].')</div>';
 		}
 		// line break
 		$output[]='<div class="summarybreak">&nbsp;</div>';
 	}
 	
 	// blades
-	if (count($aBlades)) {
-	foreach ($aBlades as $key => $blade) {
+	if (count($aSDC['blade'])) {
+	foreach ($aSDC['blade'] as $key => $blade) {
 		($blade['width'])?$width=$blade['width'].' wide ':$width='';
 		($blade['complex'])?$scaletemp=' scale '.$blade['complex']:$scaletemp='';
 		if ($e) {
@@ -1098,8 +1098,8 @@ function fSummarize($e=0) {
 	}
 	
 	// power and power cooling
-	if (count($aPower)) {
-	foreach ($aPower as $key => $power) {
+	if (count($aSDC['power'])) {
+	foreach ($aSDC['power'] as $key => $power) {
 		$temp='<div class="summaryline">PSU slot '.$key.': '.$power[watts].'W ('.$power[desc].') FRU '.$power[fru];
 		if ($power[cooling1][rpm]) $temp.='; fan pack @ '.$power[cooling1][rpm].' RPM';
 		$output[]=$temp.'</div>';
@@ -1109,8 +1109,8 @@ function fSummarize($e=0) {
 	}
 	
 	// blowers
-	if (count($aCooling)) {
-		foreach ($aCooling as $key => $blower) {
+	if (count($aSDC['cooling'])) {
+		foreach ($aSDC['cooling'] as $key => $blower) {
 			$temp='<div class="summaryline">Blower '.$key.' ('.$blower[desc].')';
 			if ($blower[fru]) $temp.=': FRU '.$blower[fru]; else $temp.='(no FRU in log)';
 			if ($blower[rpm]) $temp.=' @ '.$blower[rpm].' RPM';
@@ -1121,8 +1121,8 @@ function fSummarize($e=0) {
 	}
 	
 	// io modules
-	if (count($aIO)) {
-		foreach ($aIO as $key => $io) {
+	if (count($aSDC['io'])) {
+		foreach ($aSDC['io'] as $key => $io) {
 			if (!$io['name']) $io['name']=$io['desc'];
 			$output[]='<div class="summaryline">I/O '.sprintf("%02s",$key).': FRU '.$io[fru].', P/N '.$io[pn].'; '.$io[manuf].' '.$io[type].': '.$io[name].'</div>';
 			if ($io['rssm']) $output[]='<div class="summaryline">&nbsp; &nbsp; &nbsp; &nbsp; RAID Card: '.$io['rssm']['desc'].', MAC '.$io['rssm']['mac'].'</div>';
@@ -1153,16 +1153,16 @@ function fSummarize($e=0) {
 	}
 	
 	// interposers
-	if (count($aMSIM)) {
-		foreach ($aMSIM as $key => $msim) {
+	if (count($aSDC['msim'])) {
+		foreach ($aSDC['msim'] as $key => $msim) {
 			$output[]='<div class="summaryline">MSIM '.sprintf("%02s",$key).': FRU '.$msim[fru].', P/N '.$msim[pn].'; '.$msim[desc].': '.$msim[name].'</div>';
 		}
 		// line break
 		$output[]='<div class="summarybreak">&nbsp;</div>';
 	}
 	
-	if (count($aStorage)) {
-		foreach ($aStorage as $key => $storage) {
+	if (count($aSDC['storage'])) {
+		foreach ($aSDC['storage'] as $key => $storage) {
 			$output[]='<div class="summaryline">Storage Module '.sprintf("%02s",$key).': FRU '.$storage[fru].', P/N '.$storage[pn].'; '.$storage[desc].': '.$storage[name].'</div>';
 			if ($e) { $output[]='<div class="summaryextra">Firmware Build ID: '.$storage['buildid'].'; Firmware Release Level: '.$storage['rlevel'].'</div>'; }
 		}
@@ -1171,8 +1171,8 @@ function fSummarize($e=0) {
 	}
 	
 	// media tray(s)
-	if (count($aMedia)) {
-		foreach ($aMedia as $key => $media) {
+	if (count($aSDC['mediatray'])) {
+		foreach ($aSDC['mediatray'] as $key => $media) {
 			$temp='<div class="summaryline">Media Tray '.sprintf("%02s",$key).': FRU '.$media[fru].', P/N '.$media[pn].'; '.$media[desc];
 			if ($media[name]) $temp.=': '.$media[name];
 			$output[]=$temp.'</div>';
@@ -1182,11 +1182,11 @@ function fSummarize($e=0) {
 	}
 	
 	// bofm
-	if (count($aLicenses)) {
-		foreach ($aLicenses as $key => $license) {
+	if (count($aSDC['licenses'])) {
+		foreach ($aSDC['licenses'] as $key => $license) {
 			if ($key=='details'||$key=='features') continue;
 			if ($license['status']=='No License') continue;
-			$output[]='<div class="summaryline">'.$aLicenses['features'][$key].' Status: '.$license['status'].'</div>';
+			$output[]='<div class="summaryline">'.$aSDC['licenses']['features'][$key].' Status: '.$license['status'].'</div>';
 		}
 		// line break
 		$output[]='<div class="summarybreak">&nbsp;</div>';
@@ -1196,21 +1196,21 @@ function fSummarize($e=0) {
 }
 
 function fShowHealthSummary() {
-	global $aMeta;
+	global $aSDC;
 	
-	$output[]='<strong>'.$aMeta['health']."</strong>\n\n";
-	$output[]=$aMeta['healthdetail'];
+	$output[]='<strong>'.$aSDC['meta']['health']."</strong>\n\n";
+	$output[]=$aSDC['meta']['healthdetail'];
 	return implode("",$output);
 }
 
 function fShowScaleNotice() {
-	global $aScale;
+	global $aSDC;
 	
-	($aScale['parsed']['count']==1)?$complex_plural='':$complex_plural='es';
+	($aSDC['scale']['parsed']['count']==1)?$complex_plural='':$complex_plural='es';
 	
-	$output[]='This chassis contains '.$aScale['parsed']['count']." scalable complex".$complex_plural.". See the details tab for further info.\n";
+	$output[]='This chassis contains '.$aSDC['scale']['parsed']['count']." scalable complex".$complex_plural.". See the details tab for further info.\n";
 	
-	foreach ($aScale['parsed']['complex'] as $key => $value) {
+	foreach ($aSDC['scale']['parsed']['complex'] as $key => $value) {
 		if ($value['numnodes']>0) { foreach ($value['nodedetails'] as $nodekey => $nodeval) { $templine[]=$nodeval['bladeslot']; } }
 		
 		($value['numnodes']==1)?$node_plural='':$node_plural='s';
@@ -1224,11 +1224,11 @@ function fShowScaleNotice() {
 }
 
 function fBuildScaleChart() {
-	global $aScale;
+	global $aSDC;
 	
 	$output[]='<table id="scaledetailstable" class="tablesorter"><thead><tr><th>complex</th><th>state</th><th>slots</th><th>nodes</th><th>partitions</th><th>primary</th><th>last update</th><th>slot</th><th>serial</th><th>state</th><th>flags</th></thead>';
 	
-	foreach ($aScale['parsed']['complex'] as $key => $val) {
+	foreach ($aSDC['scale']['parsed']['complex'] as $key => $val) {
 		$output[]='<tr><td>Complex '.($key+1).'</td><td>'.$val['state'].'</td><td>'.$val['numslots'].'</td><td>'.$val['numnodes'].'</td><td>'.$val['partitions'].'</td><td>'.$val['primaryblade'].'</td><td>'.$val['lastupdate'].'</td>';
 	
 		if ($val['numnodes']>0) {
@@ -1256,14 +1256,14 @@ function fBuildScaleChart() {
 }
 
 function fBuildSOLChart() {
-	global $aBlades;
+	global $aSDC;
 	
 	//$output[]="##: &nbsp; R &nbsp; C &nbsp; E &nbsp; P &nbsp; ServProc IP\n";
 	//$output[]="---------------------------------\n";
 
 	$output[]='<table id="solstatustable" class="tablesorter"><thead><tr><th>#</th><th>ready</th><th>capable</th><th>enabled</th><th>power</th><th>ServProc IP</th><th>Status</th></thead>';
 	
-	foreach ($aBlades as $key => $value) {
+	foreach ($aSDC['blade'] as $key => $value) {
 		($value['power'])?$pwr='':$pwr='NO';
 		($value['state']=='Ready')?$state='':$state='NO';
 		($value['solenabled'])?$ena='':$ena='NO';
@@ -1285,9 +1285,9 @@ function fBuildSOLChart() {
 
 
 function fBuildPowerDetails() {
-	global $aPowerMeta;
+	global $aSDC;
 	
-	//$aPowerMeta['rawgauge'];
+	//$aSDC['powermeta']['rawgauge'];
 	
 	/*
 	Maximum Power Consumption:  8640
@@ -1827,7 +1827,7 @@ function fBuildDevMap($b) {
 	// arguments
 	// array $b, the full file read into an array
 	
-	global $aBlades,$aPowerMeta;
+	global $aSDC;
 	
 	if ($b) {
 	
@@ -1849,7 +1849,7 @@ function fBuildDevMap($b) {
 				case 7:	$type='fanpack  ';	break;
 			}
 			
-			if ($line[0]==1) $aPowerMeta['inuse'][$line[1]]=$line[3];
+			if ($line[0]==1) $aSDC['powermeta']['inuse'][$line[1]]=$line[3];
 			
 			if ($line[4]<1) $line[4]='';
 			if ($line[5]<1) $line[5]='';
@@ -1884,7 +1884,7 @@ function fBuildDevMap($b) {
 			//array_unshift($aPWReturn,'<table class="tablesorter" id="pwrdetails"><thead><tr><th>slot</th><th>domain</th><th>total</th><th>pm1</th><th>pm2</th><th>pm3</th><th>pm4</th></tr></thead>');
 			//$aPWReturn[]='</table>';
 				
-			$aPowerMeta['details']=$aPWReturn;
+			$aSDC['powermeta']['details']=$aPWReturn;
 		}
 		
 		/*
@@ -1913,13 +1913,13 @@ function fBuildDevMap($b) {
 		foreach (fReturnSection($b,'BLADE POWER STATISTICS','BLADE POWER EXEC STATISTICS',1,-3) as $key => $value) {
 		//foreach (fReturnSection($b,'BLADE POWER STATISTICS','BLADE POWER STATISTICS',1,15) as $key => $value) {
 			$line=preg_split('/ +/', trim($value));
-			$aPowerMeta['powerstats'][]=$line;
+			$aSDC['powermeta']['powerstats'][]=$line;
 		}
 		
 		// a possibly interesting value from this one: "wCPU," possibly indicating the wattage per CPU 
-		foreach (fReturnSection($b,'EXTRA BLADE POWER INFORMATION','EXTRA BLADE POWER INFORMATION',1,count($aPowerMeta['powerstats'])) as $key => $value) {
+		foreach (fReturnSection($b,'EXTRA BLADE POWER INFORMATION','EXTRA BLADE POWER INFORMATION',1,count($aSDC['powermeta']['powerstats'])) as $key => $value) {
 			$line=preg_split('/ +/', trim($value));
-			$aPowerMeta['extrapowerstats'][]=$line;
+			$aSDC['powermeta']['extrapowerstats'][]=$line;
 		}
 
 		
@@ -1935,15 +1935,15 @@ function fBuildDevMap($b) {
 		
 		foreach ($SOLlist as $value) { $aSOL[$value[0]][]=trim($value[1]); }
 		foreach ($aSOL as $key => $value) {
-			if (!$aBlades[$key]) continue;
-			(fSplitByColon(preg_grep('/Present/',$value))=='Yes')?$aBlades[$key]['present']=TRUE:FALSE;
-			$aBlades[$key]['power']=fSplitByColon(preg_grep('/Power State/',$value));
-			(fSplitByColon(preg_grep('/SOL:/',$value))=='Enabled')?$aBlades[$key]['solenabled']=TRUE:FALSE;
-			//$aBlades[$key]['width']=fSplitByColon(preg_grep('/width/',$value)); // we already know this
-			(fSplitByColon(preg_grep('/SOL Capability/',$value))=='Yes')?$aBlades[$key]['solcapable']=TRUE:FALSE;
-			$aBlades[$key]['soladdr']=fSplitByColon(preg_grep('/Addr/',$value));
-			$aBlades[$key]['state']=fSplitByColon(preg_grep('/^State/',$value));
-			$aBlades[$key]['soltext']=fSplitByColon(preg_grep('/Analyzer/',$value));
+			if (!$aSDC['blade'][$key]) continue;
+			(fSplitByColon(preg_grep('/Present/',$value))=='Yes')?$aSDC['blade'][$key]['present']=TRUE:FALSE;
+			$aSDC['blade'][$key]['power']=fSplitByColon(preg_grep('/Power State/',$value));
+			(fSplitByColon(preg_grep('/SOL:/',$value))=='Enabled')?$aSDC['blade'][$key]['solenabled']=TRUE:FALSE;
+			//$aSDC['blade'][$key]['width']=fSplitByColon(preg_grep('/width/',$value)); // we already know this
+			(fSplitByColon(preg_grep('/SOL Capability/',$value))=='Yes')?$aSDC['blade'][$key]['solcapable']=TRUE:FALSE;
+			$aSDC['blade'][$key]['soladdr']=fSplitByColon(preg_grep('/Addr/',$value));
+			$aSDC['blade'][$key]['state']=fSplitByColon(preg_grep('/^State/',$value));
+			$aSDC['blade'][$key]['soltext']=fSplitByColon(preg_grep('/Analyzer/',$value));
 		}
 		
 		return $aReturn;
