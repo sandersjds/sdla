@@ -77,10 +77,10 @@ if (($_GET['ajax']) && ($_GET['file'])) {
 				
 				echo '<a name="evtlog"></a>
 					<div id="evtlog" class="outputbox">';
-				echo fEvtFilterBoxes($aEvt);
+				echo fEvtFilterBoxes($aSDC['evt']);
 				echo '<h2>Event Log</h2>';
 				fTimer('evtlog');
-				echo fEvtlog($aEvt);
+				echo fEvtlog($aSDC['evt']);
 				fTimer('evtlog',1);
 				echo '</div>';
 
@@ -146,6 +146,7 @@ if (($_GET['ajax']) && ($_GET['file'])) {
 				mkdir($upload_dir.$upload_rand);
 				exec(escapeshellcmd('tar -C '.$upload_dir.$upload_rand.$decompression_options.$uploadfile));
 				exec(escapeshellcmd('chmod -R 777 '.$upload_dir.$upload_rand.'/*'));
+				deltree($upload_dir.$upload_rand.'.'.$extension);
 				header('Location:./?'.$upload_rand);
 			}
 		}
@@ -261,7 +262,7 @@ if (($_GET['ajax']) && ($_GET['file'])) {
 			fBuildDevMap($aDevfile);
 			fTimer('SOL',1);
 			
-			if ((substr($aChassis[1]['mtm'],0,4)==8720) || (substr($aChassis[1]['mtm'],0,4)==8730) || (substr($aChassis[1]['mtm'],0,4)==8740) || (substr($aChassis[1]['mtm'],0,4)==8750)) {
+			if ((substr($aSDC['chassis'][1]['mtm'],0,4)==8720) || (substr($aSDC['chassis'][1]['mtm'],0,4)==8730) || (substr($aSDC['chassis'][1]['mtm'],0,4)==8740) || (substr($aSDC['chassis'][1]['mtm'],0,4)==8750)) {
 				$telco_chassis=TRUE;
 				//$shortmode=TRUE;
 			}
@@ -294,11 +295,11 @@ if (($_GET['ajax']) && ($_GET['file'])) {
 			if ($telco_chassis){
 				echo '<a name="bctwarning"></a>
 						<div id="bctwarning" class="outputbox">
-						<h2>Telco Chassis Warning</h2>This log is for a <strong>BLADECENTER TELCO CHASSIS</strong> (MT '.substr($aChassis[1]['mtm'],0,4).'). The Annihilator will attempt to parse this log, but be aware that due to some of the data topology structures and widely varying types of output from different firmware versions, the output may look strange, and may produce VERY large logs. If it takes <strong>longer than 10 seconds</strong> or so to complete loading of the page, <strong>press ESCAPE to cancel loading</strong> or your browser may hang.<br /><br />Your mileage may vary; you have been warned.</div>';
+						<h2>Telco Chassis Warning</h2>This log is for a <strong>BLADECENTER TELCO CHASSIS</strong> (MT '.substr($aSDC['chassis'][1]['mtm'],0,4).'). The Annihilator will attempt to parse this log, but be aware that due to some of the data topology structures and widely varying types of output from different firmware versions, the output may look strange, and may produce VERY large logs. If it takes <strong>longer than 10 seconds</strong> or so to complete loading of the page, <strong>press ESCAPE to cancel loading</strong> or your browser may hang.<br /><br />Your mileage may vary; you have been warned.</div>';
 			}
 						
 			// health summary section
-			if ($aMeta['health']!='Good') {
+			if ($aSDC['meta']['health']!='Good') {
 				echo '<a name="healthsummary"></a>
 						<div id="healthsummary" class="outputbox">
 						<h2>Health Summary</h2><pre>';
@@ -309,7 +310,7 @@ if (($_GET['ajax']) && ($_GET['file'])) {
 			}
 			
 			// scale notice
-			if ($aScale['parsed']['count']>0) {
+			if ($aSDC['scale']['parsed']['count']>0) {
 				echo '<a name="scalenotice"></a>
 						<div id="scalenotice" class="outputbox">
 						<h2>Scalable Complexes</h2><pre>';
@@ -335,13 +336,13 @@ if (($_GET['ajax']) && ($_GET['file'])) {
 
 			
 			// unhandled section
-			if (count($aUnhandled)) {
+			if (count($aSDC['unhandled'])) {
 				echo '<a name="unhandled"></a>
 						<div id="unhandled" class="outputbox">
 						<h3>Sections with a component type currently unrecognized by the parser.<br />This is a bug; you should let <a href="mailto:jds@us.ibm.com">Josh</a> know when you see these.</h3>
 						<h2>Unhandled Sections</h2>';
 				fTimer('unh');
-				echo implode($aUnhandled);
+				echo implode($aSDC['unhandled']);
 				fTimer('unh',1);
 				echo '</div>';
 			}
@@ -386,17 +387,17 @@ if (($_GET['ajax']) && ($_GET['file'])) {
 			}
 			
 			// licenses
-			if ($aLicenses['details']) {
+			if ($aSDC['licenses']['details']) {
 				echo '<a name="licenses"></a>
 						<div id="licenses" class="outputbox">
 						<h2>Licensed Features</h2><pre>';
 				
-				echo implode('<br />',$aLicenses['details']);
+				echo implode('<br />',$aSDC['licenses']['details']);
 				echo '</pre></div>';
 			}
 			
 			// scalable partitions section
-			if ($aScale['scale']) {
+			if ($aSDC['scale']['scale']) {
 				fTimer('scale');
 				echo '<a name="scale"></a>
 						<div id="scale" class="outputbox">
@@ -404,9 +405,9 @@ if (($_GET['ajax']) && ($_GET['file'])) {
 				
 				echo fBuildScaleChart();
 				
-				//echo '<hr />DEBUG INFO FOLLOWS: '.print_r($aScale['parsed'],TRUE).'<hr />';
+				//echo '<hr />DEBUG INFO FOLLOWS: '.print_r($aSDC['scale']['parsed'],TRUE).'<hr />';
 				
-				//echo implode($aScale['scale']);
+				//echo implode($aSDC['scale']['scale']);
 				
 				fTimer('scale',1);
 				echo '</pre></div>';
@@ -421,16 +422,16 @@ if (($_GET['ajax']) && ($_GET['file'])) {
 						<div id="fuelgauge" class="outputbox">
 						<h3></h3>
 						<h2>Fuel Gauge</h2><pre>';
-					echo implode('',$aPowerMeta['rawgauge']);
+					echo implode('',$aSDC['powermeta']['rawgauge']);
 				echo '</pre></div>';
 
 				if (is_dir($upload_dir.$_SERVER['QUERY_STRING']) && is_file($upload_dir.$_SERVER['QUERY_STRING'].'/primary_ffdc/developer.txt')) {
-					if ($aPowerMeta['details']) {
+					if ($aSDC['powermeta']['details']) {
 						echo '<a name="powerdetails"></a>
 								<div id="powerdetails" class="outputbox">
 								<h3></h3>
 								<h2>Power Details</h2><pre>';
-						echo implode("\n",$aPowerMeta['details']);
+						echo implode("\n",$aSDC['powermeta']['details']);
 						echo '</pre></div>';
 					}
 					
@@ -441,13 +442,13 @@ if (($_GET['ajax']) && ($_GET['file'])) {
 					
 					$sChartData='';
 					$sChartData2='';
-					foreach ($aPowerMeta['powerstats'] as $key => $line) {
+					foreach ($aSDC['powermeta']['powerstats'] as $key => $line) {
 						if ($key<1) continue;
 						$sChartData.='data.setValue('.$key.',0,"B'.$key.'");';
 						$sChartData.='data.setValue('.$key.',1,'.$line[10].');';
 						$sChartData.='data.setValue('.$key.',2,'.$line[11].');';
 						$sChartData.='data.setValue('.$key.',3,'.$line[12].');';
-						//$sChartData.='data.setValue('.$key.',3,'.$aPowerMeta['inuse'][$key].');';
+						//$sChartData.='data.setValue('.$key.',3,'.$aSDC['powermeta']['inuse'][$key].');';
 						$sChartData.='data.setValue('.$key.',4,'.$line[13].');';
 						
 						
@@ -471,7 +472,7 @@ if (($_GET['ajax']) && ($_GET['file'])) {
 		//data.addColumn('number', 'usage');
 		data.addColumn('number', 'PRESET');
 		data.addColumn('number', 'MAXth');
-		data.addRows(<?php echo count($aPowerMeta['powerstats']); ?>);
+		data.addRows(<?php echo count($aSDC['powermeta']['powerstats']); ?>);
 		
 		<?php echo $sChartData; ?>
 		
@@ -489,7 +490,7 @@ if (($_GET['ajax']) && ($_GET['file'])) {
 		data2.addColumn('number', 'PM 2');
 		data2.addColumn('number', 'PM 3');
 		data2.addColumn('number', 'PM 4');
-		data2.addRows(<?php echo count($aPowerMeta['powerstats']); ?>);
+		data2.addRows(<?php echo count($aSDC['powermeta']['powerstats']); ?>);
 		
 		<?php echo $sChartData2; ?>
 		
@@ -507,7 +508,7 @@ if (($_GET['ajax']) && ($_GET['file'])) {
 <?php
 				/*
 					echo '<table id="powerstatstable" class="tablesorter">';
-					foreach ($aPowerMeta['powerstats'] as $key => $line) {
+					foreach ($aSDC['powermeta']['powerstats'] as $key => $line) {
 						if ($key<1) echo '<thead>';
 						echo '<tr>';
 						($key<1)?$cell='th':$cell='td';
@@ -525,7 +526,7 @@ if (($_GET['ajax']) && ($_GET['file'])) {
 							<h3></h3>
 							<h2>Extra Power Stats</h2>';
 					echo '<table id="extrapowerstatstable" class="tablesorter">';
-					foreach ($aPowerMeta['extrapowerstats'] as $key => $line) {
+					foreach ($aSDC['powermeta']['extrapowerstats'] as $key => $line) {
 						if ($key<1) echo '<thead>';
 						echo '<tr>';
 						($key<1)?$cell='th':$cell='td';
@@ -559,10 +560,10 @@ if (($_GET['ajax']) && ($_GET['file'])) {
 			// eventlog section
 			echo '<a name="evtlog"></a>
 					<div id="evtlog" class="outputbox">';
-			//echo fEvtFilterBoxes($aEvt);
+			//echo fEvtFilterBoxes($aSDC['evt']);
 			echo '<h2>Event Log</h2>';
 			fTimer('evtlog');
-			echo fEvtlog($aEvt);
+			echo fEvtlog($aSDC['evt']);
 			fTimer('evtlog',1);
 			echo '</div>';
 			?>
@@ -636,7 +637,7 @@ if (($_GET['ajax']) && ($_GET['file'])) {
 				unset($aLogfile); // service.txt read into an array
 				unset($aDevfile); // developer.txt read into an array
 				unset($vdbgfile); // vdbg.txt read into an array
-				unset($aEvt); // event log parsed and enumerated; this isn't actually raw data and may be worthwhile for troubleshooting
+				unset($aSDC['evt']); // event log parsed and enumerated; this isn't actually raw data and may be worthwhile for troubleshooting
 				echo print_r(get_defined_vars(),TRUE);
 			
 			echo '</pre></div>';
