@@ -1,5 +1,5 @@
 <?php	
- 
+
 // SERVICE DATA LOG ANNIHILATOR
 // PARSES AND SHORTENS IN LESS TIME!
 
@@ -15,14 +15,9 @@
 // ***** ***** ***** ***** ***** ***** ***** 
 // ***** ***** ***** ***** ***** ***** ***** 
 
-
-// for the full "README" please see the ABOUT section near the bottom of this file.
-
-
 // INSTALL
 //  step 1: copy files to host
 //  step 2: create upload directory, chmod 6777 dir; default is './upl/'
-
 
 
 // ***** ***** ***** ***** ***** ***** ***** 
@@ -59,14 +54,7 @@ fTimer('cleanup',1);
  if no GET and no POST: just show the input page
 */
 
-
-
-
-
 if (($_GET['ajax']) && ($_GET['file'])) {	
-
-
-
 	// ok here's the way this should work. ready?
 	// ajax requests can only return the requested portion
 	// no html, head, or body tags as things can get strange in the DOM otherwise
@@ -119,13 +107,7 @@ if (($_GET['ajax']) && ($_GET['file'])) {
 		if (is_dir($upload_dir.$_GET['file'])) echo fBuildFileList($_GET['file']);
 	}
 	
-	
-	
-	
 } elseif ($_GET['url']) {
-
-
-
 	$url='http://multitool.raleigh.ibm.com/common/downloads/GetClFile.cgi';
 	$querystring=explode('?',$_GET['url']);
 	if (strpos($querystring[1],'logId')!==FALSE) {
@@ -145,6 +127,7 @@ if (($_GET['ajax']) && ($_GET['file'])) {
 					$temp=explode('"',$val);
 					$filename=$temp[1];
 					$extension=explode('.',$filename);
+					if (count($extension)>2) $extension2=strtolower($extension[count($extension)-2]);
 					$extension=strtolower($extension[count($extension)-1]);
 				}
 			}
@@ -152,7 +135,8 @@ if (($_GET['ajax']) && ($_GET['file'])) {
 
 		if ($content && $filename && $extension) {
 			//$extension='tgz';
-			if ($extension=='tgz' || $extension=='tar') {
+			if ($extension=='tgz' || $extension=='tar' || ($extension=='gz' && $extension2=='tar')) {
+				if ($extension=='gz' && $extension2=='tar') $extension='tar.gz';
 				($extension=='tar')?$decompression_options=' -xf ':$decompression_options=' -zxf ';
 				$upload_rand=base_convert(mt_rand(10,99).time(),10,36);
 				$uploadfile=$upload_dir.$upload_rand.'.'.$extension;
@@ -173,8 +157,6 @@ if (($_GET['ajax']) && ($_GET['file'])) {
 		//fBuildFooter();
 	}
 } elseif ($_SERVER['QUERY_STRING']=='list') {
-
-
 	fBuildHeader();
 	echo '<a name="uploads"></a>
 			<div id="uploads" class="inputbox">
@@ -195,11 +177,7 @@ if (($_GET['ajax']) && ($_GET['file'])) {
 	}
 	echo '</table></div>';
 	fBuildFooter();
-	
-	
 } else {
-
-
 	if ($_SERVER['QUERY_STRING']) {
 		// check to see if the file described by the query string exists and use it
 			fTimer('retrieve');
@@ -266,34 +244,6 @@ if (($_GET['ajax']) && ($_GET['file'])) {
 		//fBuildFooter();
 	}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 	if ($aLogfile) {
 		fBuildHeader();
 		
@@ -342,27 +292,6 @@ if (($_GET['ajax']) && ($_GET['file'])) {
 				<div id="summariestab" class="tab_content">
 		<?php
 		
-		/*
-		
-		// THIS WAS MOVED UP TO ALLOW FOR THE HANDLING OF THE TABS BASED ON DATA
-		// THIS CAN BE DELETED IF IT WORKS PROPERLY
-		
-		fTimer('pass1');
-		$aLogfileIndex=fBuildTree($aLogfile);
-		fTimer('pass1',1);
-		
-		if (count($aLogfileIndex)>1) {
-			// walk the map, build the individual arrays
-			fTimer('pass2');
-			fWalkTree($aLogfileIndex,$aLogfile);
-			fTimer('pass2',1);
-			
-			// parse developer.txt for SOL data
-			fTimer('SOL');
-			fBuildDevMap($aDevfile);
-			fTimer('SOL',1);
-		*/
-			
 			if ($telco_chassis){
 				echo '<a name="bctwarning"></a>
 						<div id="bctwarning" class="outputbox">
@@ -577,7 +506,7 @@ if (($_GET['ajax']) && ($_GET['file'])) {
     <div id="chart_div2"></div>
 
 <?php
-				
+				/*
 					echo '<table id="powerstatstable" class="tablesorter">';
 					foreach ($aSDC['powermeta']['powerstats'] as $key => $line) {
 						if ($key<1) echo '<thead>';
@@ -606,7 +535,8 @@ if (($_GET['ajax']) && ($_GET['file'])) {
 						if ($key<1) echo '</thead>';
 					}
 					echo '</table></div>';
-					
+					*/
+					echo '</div>';
 				}
 			?>
 				</div>
@@ -680,52 +610,7 @@ if (($_GET['ajax']) && ($_GET['file'])) {
 					<a name="aboutsection"></a>
 					<div id="aboutsection" class="outputbox">
 						<h2>About the Annihilator</h2>
-						<pre>
-
-
-// SERVICE DATA LOG ANNIHILATOR
-// PARSES and SHORTENS in LESS TIME!
-
-// ***** ***** ***** ***** ***** ***** ***** 
-// ***** ***** ***** ***** ***** ***** ***** 
-// created and maintained by JOSH SANDERS of
-//   IBM System x & BladeCenter Support in Atlanta, Georgia, USA
-//   <a href="mailto:jds@us.ibm.com">jds@us.ibm.com</a>
-// ***** ***** ***** ***** ***** ***** ***** 
-// ***** ***** ***** ***** ***** ***** ***** 
-
-
-// the humble beginnings and change history of the service data log annihilator:
-// friday, april 9, 2010. because all big projects start on fridays.
-//   original idea courtesy of JOE SHIPMAN.
-
-// version 1 published to the 7x daylighters april 19, 2010
-// version 2 published april 29, 2010, added support for caching files and other excitement
-// version 3 published june 29, 2010, added file browser, vdbg/sol parsing, mike sparks' requests, and dozens of fixes
-// version 4 published oct 29, 2010 (officially): new server, dozens of fixes, and the power tab (which is incomplete)
-// version 5 published dec 29, 2010: scalable complex additions, bofm additions, various fixes
-
-// KNOWN GOTCHAS (no current intention to fix)
-//  machine support
-//    telco chassis support - data structures vary widely between firmware versions and machine types
-
-// TODO
-//  machine support
-//    7872 HX5 blade: additional firmware information (FPGA)
-//    8028/8014 issues:
-//      these blades list all sorts of things as things they are not
-//      current notables:
-//        49Y4458: (SATA Controller card) lists as "SYS CARD EX," which is shared with management cards on POWER blades
-//        46C7171: MR10ie lists as "ADDIN CARD," shared with CKVM cards
-//  eventlog
-//    time-shift event timestamps
-//    proper css for the controls for the table
-//  basics
-//    possibly collapse all the arrays into one big one to make globals easier?
-//    isolate procedural code out of index.php (this will be a big one)
-//    better seperate syntax and semantics (also a big one)
-//    get into w3-compliant format (lol)
-						</pre>
+						<pre><?php include('./README');?></pre>
 					</div>
 				</div>
 				
