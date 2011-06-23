@@ -248,4 +248,13 @@ $(document).ready(function() {
 		"bSort": false,
 		"sDom": '<"top">rt<"bottom"<"clear">'
 	} );
+	
+	var oTableICPM = $('.icpmtable').dataTable( {
+		"bPaginate": false,
+		//"oLanguage": {
+		//	"sSearch": "Search all columns:"
+		//},
+		"bSort": false,
+		"sDom": '<"top">rt<"bottom"<"clear">'
+	} );
 });

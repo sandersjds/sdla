@@ -280,6 +280,7 @@ if (($_GET['ajax']) && ($_GET['file'])) {
 				<li><a href="#maptab">Map</a></li>
 				<li><a id="evtlogtab" href="#eventlogtab">Eventlog</a></li>
 				<?php
+					if ($aSDC['icpmtest']) { ?><li><a href="#icpmtab">icpm</a></li><?php }
 					if (is_dir($upload_dir.$_SERVER['QUERY_STRING']) && is_file($upload_dir.$_SERVER['QUERY_STRING'].'/primary_ffdc/vdbg.txt')) { ?><li><a href="#vdbgtab">vdbg</a></li><?php }
 					if (is_dir($upload_dir.$_SERVER['QUERY_STRING'])) { ?><li><a href="#filelisttab">File Browser</a></li><?php }
 					/*if (is_dir($upload_dir.$_SERVER['QUERY_STRING']) && is_file($upload_dir.$_SERVER['QUERY_STRING'].'/primary_ffdc/developer.txt')) { ?><li><a href="#soltab">SOL</a></li><?php }*/ 
@@ -568,6 +569,26 @@ if (($_GET['ajax']) && ($_GET['file'])) {
 			echo '</div>';
 			?>
 				</div>
+				
+			<?php
+			
+			if ($aSDC['icpmtest']) { 
+				echo '<div id="icpmtab" class="tab_content">';
+				// ICPMTEST
+				echo '<a name="icpmtest"></a>
+						<div id="icpmtest" class="outputbox">';
+				echo fShowICPMData();
+
+				// these are the debug output lines
+				echo '<pre>';
+				print_r($aSDC['icpmtest']);
+				// end debug output lines
+				
+				echo '</div>';
+				echo '</div>';
+			}
+			
+			?>
 				
 			<?php		
 			

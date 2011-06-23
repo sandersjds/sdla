@@ -696,6 +696,9 @@ function fDrawIO($n,$s) {
 	$aSDC['io'][$iobay]['manuf']=fSplitByColon(preg_grep('#Manufacturer ID#', $s));
 	$aSDC['io'][$iobay]['name']=fSplitByColon(preg_grep('#Product Name#', $s));
 	
+	// for ICPM port parsing
+	if ($aSDC['io'][$iobay]['fru']=='44W4486') fDrawICPM($n,$s,$iobay);
+	
 	// OMG FIRMWARE
 	
 	$fwstart=preg_grep('#Firmware data:#', $s);
@@ -751,6 +754,43 @@ function fDrawIO($n,$s) {
 	$aSDC['io'][$iobay]['ext-current']=fSplitByColon(preg_grep('#IOM External ports configuration (current)#', $s));
 	$aSDC['io'][$iobay]['ext']=fSplitByColon(preg_grep('#IOM External ports configuration:#', $s));
 		$aLogfileIndex[$n['mapkey']]['parsed']=$aSDC['io'][$iobay];
+}
+
+function fDrawICPM($n,$s,$iobay) {
+	global $aSDC,$aLogfileIndex;
+	
+	$aPorts=preg_grep('#Topology Path ID#i', $s);
+	if ($aPorts) {
+		foreach ($aPorts as $key => $value) {
+			$portnum=fSplitByColon($value);
+			$aSDC['icpmtest'][$iobay][$portnum]['linestart']=$key;
+		}
+		foreach ($aSDC['icpmtest'][$iobay] as $key => $value) {
+			if(isset($aSDC['icpmtest'][$iobay][$key+1])) {
+				$aSDC['icpmtest'][$iobay][$key]['lineend']=$aSDC['icpmtest'][$iobay][$key+1]['linestart']-3;
+			} else {
+				// is the last key, lineend should be...? (hint: this is not correct, but is acceptable for now)
+				$aSDC['icpmtest'][$iobay][$key]['lineend']=count($s);
+			}
+		}
+		foreach ($aSDC['icpmtest'][$iobay] as $key => $value) {
+			$pointer=$aSDC['icpmtest'][$iobay][$key]['linestart']; while ($pointer<=$aSDC['icpmtest'][$iobay][$key]['lineend']) { $aSection[]=$s[$pointer++]; }
+			$aSDC['icpmtest'][$iobay][$key]['data']=$aSection;
+			
+			$aSDC['icpmtest'][$iobay][$key]['portnum']=fSplitByColon(preg_grep('#Port Number #', $aSection));
+			$aSDC['icpmtest'][$iobay][$key]['phyport']=fSplitByColon(preg_grep('#Phy Orientation#', $aSection));
+			$aSDC['icpmtest'][$iobay][$key]['type']=fSplitByColon(preg_grep('#Type #', $aSection));
+			$aSDC['icpmtest'][$iobay][$key]['target']=fSplitByColon(preg_grep('#Connected to#', $aSection));
+			$aSDC['icpmtest'][$iobay][$key]['label']=fSplitByColon(preg_grep('#Label #', $aSection));
+			$aSDC['icpmtest'][$iobay][$key]['adminstate']=fSplitByColon(preg_grep('#Phy Link Admin State #', $aSection));
+			$aSDC['icpmtest'][$iobay][$key]['linkstatus']=fSplitByColon(preg_grep('#Phy Link Status #', $aSection));
+			$aSDC['icpmtest'][$iobay][$key]['linkspeed']=fSplitByColon(preg_grep('#Link Speed & Comm Mode  #', $aSection));
+			$aSDC['icpmtest'][$iobay][$key]['linkspeedsetting']=fSplitByColon(preg_grep('#Settings#', $aSection));
+			
+			unset($aSection);
+			unset($aSDC['icpmtest'][$iobay][$key]['data']);
+		}
+	}
 }
 
 function fDrawRSSM($n,$s) {
@@ -1155,7 +1195,7 @@ function fSummarize($e=0) {
 	// interposers
 	if (count($aSDC['msim'])) {
 		foreach ($aSDC['msim'] as $key => $msim) {
-			$output[]='<div class="summaryline">MSIM '.sprintf("%02s",$key).': FRU '.$msim[fru].', P/N '.$msim[pn].'; '.$msim[desc].': '.$msim[name].'</div>';
+			$output[]='<div class="summaryline">MSIM '.sprintf("%02s",$key).': FRU '.$msim['fru'].', P/N '.$msim['pn'].'; '.$msim['desc'].': '.$msim['name'].'</div>';
 		}
 		// line break
 		$output[]='<div class="summarybreak">&nbsp;</div>';
@@ -1163,7 +1203,7 @@ function fSummarize($e=0) {
 	
 	if (count($aSDC['storage'])) {
 		foreach ($aSDC['storage'] as $key => $storage) {
-			$output[]='<div class="summaryline">Storage Module '.sprintf("%02s",$key).': FRU '.$storage[fru].', P/N '.$storage[pn].'; '.$storage[desc].': '.$storage[name].'</div>';
+			$output[]='<div class="summaryline">Storage Module '.sprintf("%02s",$key).': FRU '.$storage['fru'].', P/N '.$storage['pn'].'; '.$storage['desc'].': '.$storage['name'].'</div>';
 			if ($e) { $output[]='<div class="summaryextra">Firmware Build ID: '.$storage['buildid'].'; Firmware Release Level: '.$storage['rlevel'].'</div>'; }
 		}
 		// line break
@@ -1173,8 +1213,8 @@ function fSummarize($e=0) {
 	// media tray(s)
 	if (count($aSDC['mediatray'])) {
 		foreach ($aSDC['mediatray'] as $key => $media) {
-			$temp='<div class="summaryline">Media Tray '.sprintf("%02s",$key).': FRU '.$media[fru].', P/N '.$media[pn].'; '.$media[desc];
-			if ($media[name]) $temp.=': '.$media[name];
+			$temp='<div class="summaryline">Media Tray '.sprintf("%02s",$key).': FRU '.$media['fru'].', P/N '.$media['pn'].'; '.$media['desc'];
+			if ($media['name']) $temp.=': '.$media['name'];
 			$output[]=$temp.'</div>';
 		}
 		// line break
@@ -1201,6 +1241,34 @@ function fShowHealthSummary() {
 	$output[]='<strong>'.$aSDC['meta']['health']."</strong>\n\n";
 	$output[]=$aSDC['meta']['healthdetail'];
 	return implode("",$output);
+}
+
+function fShowICPMData() {
+	global $aSDC;
+	// $aSDC['icpmtest']
+	// 1) cycle through the number of ICPMs
+	// 2) cycle through the data for each icpm
+	
+	foreach ($aSDC['icpmtest'] as $switchbay => $data) {
+		$output[]='<h2>ICPM in I/O bay '.$switchbay.'</h2>';
+		$output[]='<table id="" class="icpmtable tablesorter">';
+		$output[]='<thead><tr><th>port</th><th>phy</th><th>type</th><th>label</th><th>admin state</th><th>status</th><th>speed</th><th>speed setting</th></tr></thead>';
+		foreach ($data as $portnum => $portdata) {
+			$output[]='<tr><td>'.$portdata['portnum'].'</td>';
+			$output[]='<td>'.$portdata['phyport'].'</td>';
+			$output[]='<td>'.$portdata['type'].'</td>';
+			$output[]='<td>'.$portdata['label'].'</td>';
+			$output[]='<td>'.$portdata['adminstate'].'</td>';
+			$output[]='<td>'.$portdata['linkstatus'].'</td>';
+			$output[]='<td>'.$portdata['linkspeed'].'</td>';
+			$output[]='<td>'.$portdata['linkspeedsetting'].'</td>';
+			$output[]='</tr>';
+		}
+		$output[]='</table>';
+	}
+	
+	
+	return implode("\n",$output);
 }
 
 function fShowScaleNotice() {
