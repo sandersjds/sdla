@@ -580,8 +580,8 @@ if (($_GET['ajax']) && ($_GET['file'])) {
 				echo fShowICPMData();
 
 				// these are the debug output lines
-				echo '<pre>';
-				print_r($aSDC['icpmtest']);
+				// echo '<pre>';
+				// print_r($aSDC['icpmtest']);
 				// end debug output lines
 				
 				echo '</div>';
