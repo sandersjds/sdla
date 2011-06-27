@@ -17,6 +17,7 @@
 // version 2 published april 29, 2010, added support for caching files and other excitement
 // version 3 published june 29, 2010, added file browser, vdbg/sol parsing, mike sparks' requests, and dozens of fixes
 // version 4 published oct 29, 2010 (officially): new server, dozens of fixes, and the power tab (which is incomplete)
+// version 5 published june 29, 2011, added HX5 scale data and ICPM data, several small changes to display
 
 // KNOWN GOTCHAS (no current intention to fix)
 //  machine support
@@ -24,7 +25,6 @@
 
 // TODO
 //  machine support
-//    7872 HX5 blade: additional firmware information (FPGA) as well as scale data parsing
 //    8028/8014 issues:
 //      these blades list all sorts of things as things they are not
 //      current notables:
@@ -37,7 +37,6 @@
 //    time-shift event timestamps
 //    proper css for the controls for the table
 //  basics
-//    possibly collapse all the arrays into one big one to make globals easier?
 //    isolate procedural code out of index.php (this will be a big one)
 //    better seperate syntax and semantics (also a big one)
 //    get into w3-compliant format (lol)
